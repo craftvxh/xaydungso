@@ -1,17 +1,40 @@
 [project]
 name = "xaydungso"
 version = "0.1.0"
-description = "Add your description here"
+description = "Xây Dựng Số — local-first desktop application"
 readme = "README.md"
 authors = [
     { name = "craftvxh", email = "xhuyvu.eng@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pyqt6>=6.12.1",
+    "pyqt6-fluent-widgets>=1.11.3",
+    "tzdata>=2026.1 ; sys_platform == 'win32'",
+]
 
 [project.scripts]
 xaydungso = "xaydungso:main"
+xaydungso-reminders = "xaydungso.worker:main"
 
 [build-system]
 requires = ["uv_build>=0.13.8,<0.14.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+packaging = [
+    "pyinstaller>=6.22.3 ; sys_platform == 'win32'",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
