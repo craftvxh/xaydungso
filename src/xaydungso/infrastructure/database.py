@@ -71,6 +71,55 @@ MIGRATIONS = (
             "CREATE INDEX deliveries_due ON reminder_deliveries(state, next_attempt_at)",
         ),
     ),
+    Migration(
+        4,
+        (
+            "ALTER TABLE records ADD COLUMN deadline_at TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE records ADD COLUMN reminder_lead_seconds INTEGER CHECK(reminder_lead_seconds IS NULL OR (typeof(reminder_lead_seconds)='integer' AND reminder_lead_seconds > 0))",
+            "ALTER TABLE reminders ADD COLUMN lead_seconds INTEGER CHECK(lead_seconds IS NULL OR (typeof(lead_seconds)='integer' AND lead_seconds > 0))",
+            "ALTER TABLE reminders ADD COLUMN record_managed INTEGER NOT NULL DEFAULT 0 CHECK(record_managed IN (0,1))",
+            "CREATE TABLE excel_record_links (workbook_path TEXT NOT NULL, record_id INTEGER NOT NULL, record_code TEXT NOT NULL, PRIMARY KEY(workbook_path, record_id))",
+        ),
+    ),
+    Migration(5, ("UPDATE reminders SET record_managed=0 WHERE record_managed=1",)),
+    # Column G is now "Ngày hẹn trả"; the rename keeps existing manual text values.
+    Migration(
+        6,
+        (
+            "ALTER TABLE records RENAME COLUMN overall_processing_time"
+            " TO return_appointment_date",
+        ),
+    ),
+    # Notification templates managed on the Nhắc nhở > Cấu hình screen.
+    Migration(
+        7,
+        (
+            """CREATE TABLE notification_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL CHECK(length(trim(name)) > 0),
+            body TEXT NOT NULL CHECK(length(trim(body)) > 0),
+            is_default INTEGER NOT NULL DEFAULT 0 CHECK(is_default IN (0,1)),
+            updated_at TEXT NOT NULL
+        )""",
+            # At most one default template.
+            "CREATE UNIQUE INDEX one_default_template ON notification_templates"
+            "(is_default) WHERE is_default=1",
+            "INSERT INTO notification_templates(name,body,is_default,updated_at) VALUES "
+            "('Nhắc hồ sơ sắp đến hạn',"
+            " '🔔 THÔNG BÁO HỒ SƠ SẮP ĐẾN HẠN' || char(10) ||"
+            " '📁 Mã hồ sơ: {{ma_ho_so}}' || char(10) ||"
+            " '👤 Người nộp: {{ho_ten}}' || char(10) ||"
+            " '📅 Hạn xử lý: {{han_xu_ly}}' || char(10) ||"
+            " '⚠️ Vui lòng kiểm tra và hoàn thiện hồ sơ đúng thời hạn quy định.',"
+            " 1, strftime('%Y-%m-%dT%H:%M:%S+00:00','now')),"
+            "('Ngắn gọn: mã hồ sơ — người nộp', 'Hồ sơ {{ma_ho_so}} — {{ho_ten}}', 0,"
+            " strftime('%Y-%m-%dT%H:%M:%S+00:00','now')),"
+            "('Kiểm tra tiến độ', 'Kiểm tra tiến độ hồ sơ {{ma_ho_so}} — {{ho_ten}}.', 0,"
+            " strftime('%Y-%m-%dT%H:%M:%S+00:00','now')),"
+            "('Hẹn trả kết quả', 'Chuẩn bị trả kết quả hồ sơ {{ma_ho_so}} cho {{ho_ten}}.',"
+            " 0, strftime('%Y-%m-%dT%H:%M:%S+00:00','now'))",
+        ),
+    ),
 )
 
 

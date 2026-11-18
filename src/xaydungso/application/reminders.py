@@ -4,13 +4,20 @@ from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Protocol
 
-from xaydungso.domain.reminders import LOCAL_ZONE, make_reminder, permitted
+from xaydungso.application.ports import NotificationError
+from xaydungso.domain.reminders import (
+    LOCAL_ZONE,
+    make_deadline_reminder,
+    make_reminder,
+    permitted,
+)
 
 
 class ReminderStore(Protocol):
     def save(self, reminder, *, editing: bool = False) -> None: ...
     def list(self) -> list[dict]: ...
     def cancel(self, reminder_id: str) -> None: ...
+    def delete(self, reminder_ids) -> int: ...
     def claim(self, now: datetime): ...
     def active(self, delivery) -> bool: ...
     def finish(self, delivery, now: datetime, error: str = "") -> None: ...
@@ -27,19 +34,30 @@ class Reminders:
     def save(
         self,
         title: str,
-        duration: int,
+        duration: int | None = None,
         *,
         start_at=None,
         record_id=None,
         reminder_id=None,
+        deadline_at=None,
+        lead_seconds=None,
     ):
-        reminder = make_reminder(
-            title,
-            duration,
-            start_at=start_at,
-            record_id=record_id,
-            reminder_id=reminder_id,
-        )
+        if deadline_at is not None:
+            reminder = make_deadline_reminder(
+                title,
+                deadline_at,
+                lead_seconds,
+                record_id=record_id,
+                reminder_id=reminder_id,
+            )
+        else:
+            reminder = make_reminder(
+                title,
+                duration,
+                start_at=start_at,
+                record_id=record_id,
+                reminder_id=reminder_id,
+            )
         self.store.save(reminder, editing=reminder_id is not None)
         return reminder
 
@@ -48,6 +66,10 @@ class Reminders:
 
     def cancel(self, reminder_id: str):
         self.store.cancel(reminder_id)
+
+    def delete(self, reminder_ids) -> int:
+        """Permanent deletion; returns how many were deleted (in-progress sends are kept)."""
+        return self.store.delete(tuple(reminder_ids))
 
 
 class ReminderEngine:
@@ -82,12 +104,14 @@ class ReminderEngine:
                     "Xây Dựng Số — Nhắc nhở",
                     f"{delivery.title}\nĐến hạn: {deadline:%d/%m/%Y %H:%M:%S}\nMã nhắc: {delivery.reminder_id}",
                 )
-            except Exception:
+            except Exception as error:
                 # Never persist transport exceptions: URLs may contain bot credentials.
                 self.store.finish(
                     delivery,
                     self.clock(),
-                    "Kênh chưa cấu hình hoặc gửi thất bại; sẽ thử lại.",
+                    str(error)
+                    if isinstance(error, NotificationError)
+                    else "Kênh chưa cấu hình hoặc gửi thất bại; sẽ thử lại.",
                 )
             else:
                 self.store.finish(delivery, self.clock())

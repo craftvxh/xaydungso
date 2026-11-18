@@ -1,63 +1,65 @@
 # Xây Dựng Số (`xaydungso`)
 
-Ứng dụng desktop Windows hỗ trợ quản lý hồ sơ xây dựng và theo dõi quá trình xử lý, hướng tới thao tác đơn giản cho một người dùng.
+Ứng dụng desktop Windows giúp một người quản lý hồ sơ xây dựng, theo dõi hạn xử lý, nhắc việc
+qua Telegram / Windows và ghi sổ theo dõi Excel. Chạy cục bộ, không cần máy chủ hay đăng nhập.
 
-> **Trạng thái:** Đã triển khai giao diện quản lý hồ sơ, CRUD SQLite, xuất sổ Excel và lịch nhắc với tiến trình nền. Kiểm thử tự động và giao diện đã chạy trên Linux; notification thật và bản đóng gói Windows chưa được kiểm chứng. Word và tính toán xây dựng chuyên ngành được hoãn.
+> **Trạng thái:** Đã có Tổng quan, Quản lý hồ sơ, Nhắc nhở (kèm mẫu thông báo), Cài đặt và ghi
+> sổ Excel. Kiểm thử tự động đạt trên Windows. Chưa nghiệm thu: gửi Telegram/popup Windows thật
+> với cấu hình chính, khóa file bằng Microsoft Excel thật, bản đóng gói `.exe`.
+> Tạo văn bản Word và tính toán xây dựng chuyên ngành đang hoãn.
 
-## Chức năng hiện có
+## Chức năng
 
-- Dashboard mở mặc định: tổng hồ sơ, hai trạng thái, lịch nhắc hôm nay/sắp tới; dữ liệu SQLite qua Application.
-- Quản lý danh sách hồ sơ xây dựng; thêm, chỉnh sửa, xóa vĩnh viễn và tìm kiếm.
-- Theo dõi các trường thông tin của hồ sơ trên giao diện desktop.
-- Tạo/sửa/hủy lịch nhắc, chọn giờ bắt đầu và thời lượng; theo dõi kết quả Telegram và Windows Notification riêng từng kênh.
-- Xuất sổ theo dõi Excel theo mẫu chính thức `so_theo_doi.xlsx` từ dữ liệu SQLite.
+- **Tổng quan** (mở mặc định): tổng hồ sơ, chưa hoàn thành, đã hoàn thành, quá hạn; bảng hồ sơ
+  quá hạn hoặc đến hạn trong 24 giờ; lịch nhắc sắp tới.
+- **Quản lý hồ sơ**: thêm/sửa/xóa vĩnh viễn, tìm kiếm, lọc trạng thái, phân trang, thao tác hàng
+  loạt (đổi trạng thái, xóa), khung chi tiết. Mã hồ sơ và họ tên là bắt buộc.
+- **Sổ Excel**: sau mỗi thay đổi, tự ghi vào file `.xlsx` có sẵn theo mẫu 14 cột A–N (mặc định
+  `docs/modules/excel/templates/so_theo_doi.xlsx`); giữ dòng cũ, thêm/sửa theo mã hồ sơ.
+- **Nhắc nhở**: lịch riêng theo *hạn xử lý − khoảng báo trước*, gửi trong 07:00–23:00 qua Telegram
+  và Windows Notification (trạng thái/thử lại từng kênh); tiến trình nhắc nền chạy cả khi đóng cửa
+  sổ. **Cấu hình** quản lý mẫu nội dung thông báo có biến `{{ma_ho_so}}`, `{{ho_ten}}`, `{{han_xu_ly}}`.
+- **Cài đặt**: thông tin cơ sở dữ liệu (chỉ đọc), Bot Token/Chat ID Telegram (kiểm tra, gửi thử;
+  token mã hóa theo tài khoản Windows), chọn file Excel làm việc.
 
-## Công nghệ
+## Chạy trên Windows
 
-Python 3.12 · PyQt6 · PyQt6-Fluent-Widgets · SQLite · Astral uv · pytest · Ruff.
+Nhấp đúp `chay_xaydungso.vbs` (hoặc `chay_xaydungso.bat`) trong thư mục dự án. Cần cài
+[uv](https://docs.astral.sh/uv/); launcher dùng `uv.lock` và chạy ẩn, lỗi báo bằng hộp thoại, log
+lần chạy gần nhất ở `%LOCALAPPDATA%\xaydungso\launcher.log`. Giữ hai file launcher cùng thư mục.
 
-Thiết kế **local-first, single-user**, theo kiến trúc Modular Monolith phân lớp.
+Sau khi cập nhật code: đóng và mở lại phần mềm; nếu nhắc nền đang chạy, dừng rồi bật lại.
 
-## Bắt đầu phát triển
+## Dữ liệu
 
-Dùng Python 3.12 và uv; không khởi tạo lại dự án:
+- Thư mục dữ liệu: `%LOCALAPPDATA%\xaydungso` (Windows), `$XDG_DATA_HOME/xaydungso` hoặc
+  `~/.local/share/xaydungso` (Linux); đặt `XAYDUNGSO_DATA_DIR` để dùng thư mục khác.
+- Gồm `xaydungso.sqlite3` (nguồn dữ liệu chính), `settings.json`, `reminders.log`, `launcher.log`.
+- Database tự nâng cấp schema khi mở (hiện v7), không xóa dữ liệu cũ. Không có sao lưu/khôi phục
+  trong ứng dụng, không nhập dữ liệu từ Excel.
+
+## Phát triển
+
+Python 3.12 · PyQt6 · PyQt6-Fluent-Widgets · SQLite · uv · pytest · Ruff. Kiến trúc Modular
+Monolith phân lớp ([Kiến trúc](docs/architecture/overview.md)).
 
 ```bash
 uv sync --locked
-uv run xaydungso
-# Hoặc: uv run python -m xaydungso
+uv run xaydungso                 # hoặc: uv run python -m xaydungso
+uv run xaydungso-reminders       # nhắc nền không cần GUI (--once, --data-dir)
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
 
-Ứng dụng mở vào **Tổng quan (Dashboard)** với số hồ sơ và lịch nhắc từ SQLite.
-Chọn **Quản lý hồ sơ** để tới trang **Hồ sơ**, rồi **Thêm hồ sơ**, nhập mã và họ tên; các trường
-theo dõi khác có thể nhập sau. Chọn dòng để mở **Chi tiết / sửa**, **Xóa hồ sơ**
-hoặc **Tạo nhắc cho hồ sơ**. Xóa luôn cần xác nhận.
-
-SQLite và file xuất `so_theo_doi.xlsx` nằm trong thư mục dữ liệu người dùng:
-`%LOCALAPPDATA%/xaydungso` trên Windows, `$XDG_DATA_HOME/xaydungso` hoặc
-`~/.local/share/xaydungso` trên Linux. Có thể dùng `XAYDUNGSO_DATA_DIR` để chọn
-thư mục dữ liệu khác. Không dùng thư mục template làm thư mục dữ liệu.
-
-Sau khi lưu/sửa/xóa, ứng dụng xuất lại toàn bộ Excel. Nếu Excel bị khóa hoặc xuất
-lỗi, hồ sơ vẫn đã lưu trong SQLite; chọn **Xuất lại Excel** để thử lại. **Mở sổ Excel**
-mở bản xuất, không mở mẫu gốc.
-
-Trong trang **Nhắc nhở**, chọn **Bật nhắc nền** để gửi các lịch đến hạn. Tiến trình
-này tiếp tục khi đóng GUI; máy vẫn phải đang bật. **Dừng nhắc nền** yêu cầu dừng
-tiến trình, không xóa lịch đã lưu. Cấu hình Telegram và hướng dẫn chạy riêng:
-[Vận hành nhắc nhở](docs/modules/reminders/operations.md).
-
-Đóng gói trên Windows: `uv run python packaging/build_windows.py`.
-Xem [trạng thái kiểm chứng](docs/development/implementation-status.md) và
-[tiến độ bàn giao](process.md). Chưa có installer hoặc cấu hình tự chạy khi đăng nhập.
+Đóng gói Windows: `uv run python packaging/build_windows.py` (PyInstaller; chưa nghiệm thu bản
+`.exe`, chưa có installer hay tự chạy khi đăng nhập).
 
 ## Tài liệu
 
-- [Mục lục tài liệu](docs/README.md)
-- [Kiến trúc](docs/architecture/overview.md)
-- [Mẫu sổ Excel](docs/modules/excel/overview.md)
-- [Lộ trình](docs/roadmap/overview.md)
-- [Quy tắc Codex](AGENTS.md)
+- [Mục lục tài liệu](docs/README.md) — đặc tả từng module, giao diện, kiến trúc, kiểm thử
+- [Vận hành nhắc nhở và khắc phục Telegram](docs/modules/reminders/operations.md)
+- [Lộ trình](docs/roadmap/overview.md) · [Nhật ký bàn giao](process.md) · [Quy tắc agent](AGENTS.md)
+
+Icon: [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) của Microsoft
+(giấy phép MIT, xem `src/xaydungso/presentation/icons/LICENSE`).

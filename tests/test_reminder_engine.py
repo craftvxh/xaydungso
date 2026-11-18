@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from xaydungso.application.ports import NotificationError
 from xaydungso.application.reminders import ReminderEngine
 from xaydungso.domain.records import RecordData, ValidationError
 from xaydungso.domain.reminders import local_time, make_reminder
@@ -58,6 +59,22 @@ def test_due_once_per_channel_retry_and_restart(database):
         result["state"] == "sent" for result in store.list()[0]["deliveries"].values()
     )
     assert reminder.id in telegram.calls[0][1]
+
+
+def test_safe_telegram_diagnostic_is_visible_on_delivery(database):
+    store, _, now = scheduled(database)
+
+    class Misconfigured:
+        def send(self, title, message):
+            raise NotificationError("Chat ID đang là ID của chính bot.")
+
+    engine = ReminderEngine(
+        store, {"telegram": Misconfigured(), "windows": Channel()}, lambda: now
+    )
+    assert engine.tick() == 1
+    state = store.list()[0]["deliveries"]
+    assert state["telegram"]["last_error"] == "Chat ID đang là ID của chính bot."
+    assert state["windows"]["state"] == "sent"
 
 
 def test_missed_schedule_waits_until_permitted_window(database):
@@ -152,3 +169,31 @@ def test_stop_request_does_not_begin_additional_deliveries(database):
         "pending",
         "sent",
     ]
+
+
+def test_delete_is_permanent_removes_deliveries_and_skips_in_progress(database):
+    store, reminder, now = scheduled(database)
+    other = make_reminder("Lịch khác", 10, created_at=now - timedelta(seconds=10))
+    store.save(other)
+    claimed = store.claim(now)  # One channel of the first due reminder is sending.
+    assert claimed is not None
+    sending_id = claimed.reminder_id
+    idle_id = other.id if sending_id == reminder.id else reminder.id
+    assert store.delete([sending_id, idle_id]) == 1
+    assert [item["id"] for item in store.list()] == [sending_id]
+    with database.connect() as connection:
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM reminder_deliveries WHERE reminder_id=?",
+                (idle_id,),
+            ).fetchone()[0]
+            == 0
+        )
+    store.finish(claimed, now)  # Finishing the kept send still works.
+    assert store.delete([sending_id]) == 1
+    assert store.list() == []
+    channel = Channel()
+    engine = ReminderEngine(
+        store, {"telegram": channel, "windows": channel}, lambda: now
+    )
+    assert engine.tick() == 0 and channel.calls == []

@@ -1,25 +1,44 @@
-# Tổng quan kiến trúc
+# Kiến trúc
 
 ## Mục tiêu
 
-`xaydungso` là ứng dụng desktop local-first dành cho **một người dùng**, Windows 11 là môi trường mục tiêu. Không cần backend server, tài khoản đăng nhập, API phục vụ nhiều người dùng hay microservices cho MVP.
+Ứng dụng desktop **local-first cho một người dùng**, mục tiêu Windows 11. Không có backend
+server, đăng nhập, API nhiều người dùng, cloud hay backup/restore. Luồng dữ liệu:
+[data-flow.md](data-flow.md).
 
-## Cách tiếp cận
+## Modular Monolith + Layered Architecture
 
-**Modular Monolith + Layered Architecture** theo hướng pragmatic: phân tách trách nhiệm đủ rõ nhưng không tạo class, interface, service rỗng để dự phòng.
+Phân tách trách nhiệm vừa đủ; không tạo class, interface hay service rỗng để dự phòng.
 
-- **Presentation:** PyQt6 và QFluentWidgets.
-- **Application:** điều phối use case và giao dịch.
-- **Domain:** quy tắc và mô hình nghiệp vụ thuần Python.
-- **Infrastructure:** SQLite, xuất Excel, xuất Word, các cổng thông báo khi được triển khai.
-- **Core:** cấu hình và logging kỹ thuật dùng chung, phạm vi hạn chế.
+| Layer (`src/xaydungso/…`) | Nhiệm vụ | Không được |
+|---|---|---|
+| `presentation` | Cửa sổ Fluent, các trang, hộp thoại, widget dùng chung, theme/icon/animation | SQL trực tiếp, quy tắc nghiệp vụ, ghi file |
+| `application` | Use case: hồ sơ, nhắc nhở + engine gửi, mẫu thông báo, Dashboard, cài đặt; các cổng (ports) | Phụ thuộc widget Qt |
+| `domain` | Mô hình và quy tắc thuần Python: hồ sơ, giờ nhắc, mẫu thông báo | Import PyQt6, SQLite, thư viện tài liệu |
+| `infrastructure` | SQLite (migration, repository, diagnostics chỉ đọc), ghi Excel, Telegram, Windows toast, cấu hình DPAPI, quản lý tiến trình worker | Quyết định quy tắc nghiệp vụ thay Domain |
+| `core` | Cấu hình ứng dụng, logging, đường dẫn dữ liệu | Trở thành nơi gom helper/nghiệp vụ |
 
-SQLite là nguồn dữ liệu duy nhất có thẩm quyền. Excel là đầu ra dẫn xuất và **không** làm nguồn dữ liệu nhập ngược. Chi tiết: [Data flow](data-flow.md).
+Hướng phụ thuộc: Presentation → Application → Domain; Infrastructure hiện thực các cổng của
+lớp trong. Composition root là `app.py` (GUI) và `worker.py` (nhắc nền) — nơi duy nhất nối
+dependencies. Không ép mapping một-một giữa `docs/modules/` và Python packages.
 
-## Stack và triển khai từng bước
+## Thành phần chính
 
-Python 3.12, Astral uv, PyQt6 + PyQt6-Fluent-Widgets; pytest và Ruff. SQLite và các thư viện xử lý tài liệu được tích hợp ở Phase tương ứng. Không triển khai chức năng cloud, backup/restore hoặc đa người dùng.
+- **GUI** (`uv run xaydungso`): `FluentWindow` với Tổng quan, Quản lý hồ sơ, Nhắc nhở (+ màn
+  hình Cấu hình mẫu), Cài đặt. Tác vụ I/O chạy ngoài Qt event loop qua `presentation/tasks.py`.
+- **Worker** (`uv run xaydungso-reminders`): tiến trình riêng không cần Qt, đọc SQLite và gửi
+  thông báo; một worker cho mỗi thư mục dữ liệu (khóa hệ điều hành).
+- **Dữ liệu** (thư mục dữ liệu người dùng): `xaydungso.sqlite3` (nguồn chính duy nhất),
+  `settings.json`, `reminders.log`, `launcher.log`, file khóa/dừng worker.
+- **Excel**: đầu ra một chiều vào sổ làm việc có sẵn; không bao giờ là nguồn dữ liệu.
 
-## Điều kiện thay đổi
+## Stack
 
-Kiến trúc có thể phát triển theo yêu cầu thực tế, nhưng bất kỳ quyết định nào đổi ranh giới layer, source of truth hay hướng dữ liệu phải được ghi nhận trước khi thay đổi code.
+Python 3.12, Astral uv (`uv.lock`), PyQt6 + PyQt6-Fluent-Widgets, SQLite (thư viện chuẩn),
+pytest, Ruff. Icon: Fluent UI System Icons (MIT, đi kèm repository). Đóng gói: PyInstaller
+(`packaging/build_windows.py`, chưa nghiệm thu).
+
+## Thay đổi kiến trúc
+
+Mọi quyết định đổi ranh giới layer, nguồn dữ liệu chính hoặc hướng dữ liệu phải được ghi vào
+tài liệu trước khi đổi code.

@@ -5,6 +5,10 @@ from typing import Protocol
 from xaydungso.domain.records import Record, RecordData, RecordStatus
 
 
+class NotificationError(RuntimeError):
+    """A transport error with a credential-free, user-facing message."""
+
+
 class RecordRepository(Protocol):
     def list(
         self, search: str = "", status: RecordStatus | None = None

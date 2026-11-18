@@ -53,7 +53,7 @@ def test_dashboard_loading_error_recovery_and_navigation():
         assert 'Không tải được' in page.feedback.text()
         assert 'private' not in page.feedback.text()
         assert all(label.text() == '—' for label in page.metric_values.values())
-        assert page.upcoming_table.rowCount() == 0
+        assert page.upcoming_items == []
 
         service.fail = False
         page.refresh_button.click()
@@ -67,6 +67,54 @@ def test_dashboard_loading_error_recovery_and_navigation():
         assert all(label.text() == '—' for label in page.metric_values.values())
         idle()
         assert 'Không tải được' in page.feedback.text()
+        page.timer.stop()
+        page.close()
+    """)
+
+
+def test_dashboard_attention_table_overdue_card_and_detail_link():
+    run_python("""
+        import time
+        from datetime import datetime, timedelta
+        from PyQt6.QtTest import QTest
+        from PyQt6.QtWidgets import QApplication
+        from xaydungso.application.dashboard import (
+            DashboardSnapshot, OpenDeadline, UpcomingReminder)
+        from xaydungso.domain.reminders import local_time
+        from xaydungso.presentation.dashboard import DashboardPage
+        from xaydungso.presentation.tasks import TaskRunner
+
+        app = QApplication([])
+        now = local_time(datetime(2026, 11, 18, 10))
+        late = OpenDeadline(7, 'HS-021', 'Nguyễn Văn A', 'Số 142', now - timedelta(hours=3))
+        soon = OpenDeadline(9, 'HS-027', 'Trần Văn B', 'Lô B2', now + timedelta(hours=2))
+        reminder = UpcomingReminder('r1', 'Nhắc kiểm tra', 'HS-027', now + timedelta(hours=1), 'Trần Văn B')
+        class Service:
+            def load(self):
+                return DashboardSnapshot(now, 4, 3, 1, 1, (reminder,), (),
+                                         overdue_records=1, attention=(late, soon),
+                                         attention_total=2)
+        runner = TaskRunner()
+        page = DashboardPage(Service(), runner)
+        page.show()
+        deadline = time.monotonic() + 5
+        QTest.qWait(10)
+        while runner.busy:
+            assert time.monotonic() < deadline
+            QTest.qWait(10)
+        assert page.metric_values['overdue_records'].text() == '1'
+        assert not page.metric_chips['incomplete_records'].isVisible()  # No % chip.
+        assert page.metric_chips['overdue_records'].isVisible()
+        assert page.attention_count.text() == '2 hồ sơ'
+        assert page.attention_table.rowCount() == 2
+        assert page.attention_table.item(0, 0).text() == 'HS-021'
+        badge = page.attention_table.cellWidget(1, 4).layout().itemAt(0).widget()
+        assert badge.text() == 'Sắp hạn (Còn 2 giờ)'
+        opened = []
+        page.open_record.connect(opened.append)
+        page.attention_table.cellWidget(0, 5).layout().itemAt(0).widget().click()
+        assert opened == [7]
+        assert len(page.upcoming_items) == 1 and 'Đồng bộ: 10:00' in page.sync.text()
         page.timer.stop()
         page.close()
     """)

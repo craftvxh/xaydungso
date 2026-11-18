@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -59,13 +60,28 @@ def start_worker(directory: Path) -> None:
             | subprocess.CREATE_NEW_PROCESS_GROUP
         }
     )
-    subprocess.Popen(
+    process = subprocess.Popen(
         [*command, "--data-dir", str(directory.resolve())],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         env=os.environ.copy(),
         **options,
+    )
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        if is_running(directory):
+            return
+        if process.poll() is not None:
+            raise RuntimeError(
+                "Tiến trình nhắc nền không khởi động được. Kiểm tra reminders.log."
+            )
+        time.sleep(0.05)
+    if process.poll() is None:
+        process.terminate()
+        process.wait(timeout=5)
+    raise RuntimeError(
+        "Nhắc nền chưa khởi động sau 5 giây. Kiểm tra quyền truy cập thư mục dữ liệu."
     )
 
 

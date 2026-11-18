@@ -92,8 +92,10 @@ def test_main_opens_dashboard_and_closes_cleanly() -> None:
             assert (data_directory() / "xaydungso.sqlite3").is_file()
             assert isinstance(window, FluentWindow)
             assert window.windowTitle() == AppSettings().window_title
-            assert window.stackedWidget.count() == 3
+            assert window.stackedWidget.count() == 5  # 4 sidebar pages + Cấu hình mẫu
             assert window.stackedWidget.currentWidget() is window.dashboard_page
+            assert not window.isMicaEffectEnabled()
+            assert window.backgroundColor.name() == '#ffffff'
             original_show(window)
             assert window.isVisible()
             observed.append(window)

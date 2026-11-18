@@ -4,7 +4,12 @@ import subprocess
 import sys
 import time
 
-from xaydungso.infrastructure.worker_process import is_running, stop_worker, worker_lock
+from xaydungso.infrastructure.worker_process import (
+    is_running,
+    start_worker,
+    stop_worker,
+    worker_lock,
+)
 
 
 def test_worker_import_and_once_do_not_import_qt(tmp_path):
@@ -71,3 +76,19 @@ def test_worker_can_run_without_gui_and_stop_cleanly(tmp_path):
         if process.poll() is None:
             process.kill()
             process.wait(timeout=5)
+
+
+def test_gui_worker_launcher_actually_starts_and_stops_empty_worker(tmp_path):
+    start_worker(tmp_path)
+    try:
+        deadline = time.monotonic() + 8
+        while not (tmp_path / "xaydungso.sqlite3").exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.05)
+        assert is_running(tmp_path)
+    finally:
+        stop_worker(tmp_path)
+        deadline = time.monotonic() + 8
+        while is_running(tmp_path) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert not is_running(tmp_path)

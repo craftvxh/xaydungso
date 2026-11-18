@@ -1,63 +1,75 @@
-# Schema SQLite đã triển khai
+# Schema SQLite
 
-Schema bám theo [quyết định CPXD](overview.md) và [mapping A–P](../excel/field-mapping.md).
-Các trường kỹ thuật không được thêm vào workbook xuất.
+Quy tắc nghiệp vụ: [CPXD](overview.md). Mapping sang Excel: [14 cột A–N](../excel/field-mapping.md).
+Trường kỹ thuật không được ghi vào workbook.
 
 ## Version và migration
 
-- Version 1: baseline Foundation cũ, chưa có bảng nghiệp vụ; giữ nguyên để nâng cấp tại chỗ.
-- Version 2: bảng `records` và index thứ tự xuất.
-- Version 3: `reminders`, `reminder_deliveries` và index lịch đến hạn.
-- `PRAGMA application_id = 0x5844534F`, `PRAGMA user_version = 3`.
-- Migration liên tiếp, thực hiện toàn bộ phần chưa áp dụng trong một transaction
-  `BEGIN IMMEDIATE`; lỗi rollback cả schema và version. Không downgrade database mới hơn.
-- Mỗi connection bật foreign keys và đóng sau sử dụng. Không có backup/restore hoặc soft delete hồ sơ.
+| Version | Thay đổi |
+|---|---|
+| 1 | Baseline Foundation, chưa có bảng nghiệp vụ |
+| 2 | Bảng `records` và index thứ tự xuất |
+| 3 | `reminders`, `reminder_deliveries`, index lịch đến hạn |
+| 4 | Deadline/khoảng báo trước, cờ lịch tự động, `excel_record_links`; giữ dữ liệu cũ |
+| 5 | Đặt `record_managed=0`: lịch tự động cũ chuyển sang quản lý riêng, giữ lịch và kết quả gửi |
+| 6 | Đổi tên `overall_processing_time` → `return_appointment_date` (Ngày hẹn trả), giữ giá trị |
+| 7 | Bảng `notification_templates`, tạo sẵn 4 mẫu, tối đa một mẫu mặc định |
 
-## Bảng records
+- `PRAGMA application_id = 0x5844534F`, `PRAGMA user_version = 7`.
+- Migration chạy liên tiếp trong một transaction `BEGIN IMMEDIATE`; lỗi rollback cả schema
+  và version. Không downgrade database mới hơn; database của ứng dụng khác bị từ chối.
+- Mỗi connection bật foreign keys và đóng sau khi dùng. Không có backup/restore, không xóa mềm.
 
-| Trường | Kiểu lưu | Ràng buộc / ý nghĩa |
+## records
+
+| Trường | Kiểu | Ghi chú |
 |---|---|---|
-| `id` | INTEGER | Primary key tự tăng, không tái dùng làm STT Excel |
-| `record_code` | TEXT | Bắt buộc, duy nhất; ứng dụng trim khoảng trắng hai đầu |
-| `applicant_name` | TEXT | Bắt buộc, ứng dụng trim khoảng trắng hai đầu |
-| `phone`, `address` | TEXT | Có thể trống; số điện thoại giữ nguyên số 0 đầu |
-| `received_at` | TEXT | Thông tin theo dõi nhập thủ công |
-| `processing_duration` | INTEGER hoặc NULL | Số giây nguyên dương; render dễ đọc ở cột G |
-| `reminder_tracking_time` | TEXT | Theo dõi thủ công, không đồng nhất với `notify_at` |
-| `overall_processing_time` | TEXT | Thông tin theo dõi thủ công |
-| `drawing_stamp_status`, `permit_stamp_status` | INTEGER 0/1 | Mặc định 0; xuất `Chưa` / `Có` |
-| `handover_at` | TEXT | Thông tin theo dõi thủ công |
-| `signature_status` | INTEGER 0/1 | Mặc định 0; xuất `Chưa ký` / `Đã ký` |
+| `id` | INTEGER | Khóa chính tự tăng, chỉ dùng nội bộ (không có STT) |
+| `record_code` | TEXT | Bắt buộc, UNIQUE, trim hai đầu |
+| `applicant_name` | TEXT | Bắt buộc, trim hai đầu |
+| `phone`, `address` | TEXT | Có thể trống; SĐT giữ số 0 đầu |
+| `received_at` | TEXT | Ngày tiếp nhận, văn bản `dd/mm/yyyy hh:mm` |
+| `deadline_at` | TEXT | Hạn xử lý, UTC ISO 8601 hoặc rỗng |
+| `return_appointment_date` | TEXT | Ngày hẹn trả, văn bản `dd/mm/yyyy hh:mm` |
+| `drawing_stamp_status`, `permit_stamp_status` | INTEGER 0/1 | Đóng dấu bản vẽ / giấy phép |
+| `handover_at` | TEXT | Thời gian giao nhận, văn bản |
+| `signature_status` | INTEGER 0/1 | Chữ ký |
 | `recipient_name`, `notes` | TEXT | Có thể trống |
-| `status` | TEXT | CHECK đúng hai trạng thái; mặc định `Chưa hoàn thành` |
-| `created_at` | TEXT | UTC ISO 8601, không thay đổi khi sửa |
+| `status` | TEXT | CHECK: `Chưa hoàn thành` / `Đã hoàn thành` |
+| `created_at` | TEXT | UTC ISO 8601, không đổi khi sửa; thứ tự danh sách và Excel |
+| `processing_duration`, `reminder_tracking_time`, `reminder_lead_seconds` | — | Legacy, giữ dữ liệu cũ, không dùng cho form/Excel |
 
-Các cột theo dõi F/H/I/L được lưu và xuất đúng nội dung văn bản người dùng nhập;
-không tự parse, tự tính hoặc đổi thành timestamp. Thời lượng G lưu riêng theo giây.
-UI hỗ trợ preset 10 giây, 1 giờ, 12 giờ, 24 giờ và số giây dương nhập tay.
+Tìm kiếm dùng Unicode `casefold` trong ứng dụng; `%`/`_` là ký tự thường, không phải
+wildcard SQL. Không thêm regex SĐT hay điều kiện hoàn thành chưa được yêu cầu.
 
-Uniqueness dùng so sánh TEXT mặc định của SQLite sau khi ứng dụng trim mã; không
-tự quy đổi hoa/thường hoặc sửa mã. Không bổ sung regex điện thoại hoặc điều kiện
-hoàn thành chưa được yêu cầu. Tìm kiếm dùng Unicode `casefold` trong ứng dụng;
-ký tự `%`/`_` là văn bản tìm kiếm, không phải wildcard SQL.
+## excel_record_links
 
-## Bảng reminders
+`(workbook_path, record_id, record_code)` ghi nhớ mã từng được ứng dụng ghi vào từng
+workbook, để đổi mã/xóa đúng dòng. Không cascade khi xóa hồ sơ (cần giữ tới lần ghi
+Excel sau). Không lưu dữ liệu đọc từ Excel.
 
-UUID `id` là khóa chính. `record_id` tùy chọn liên kết `records(id)` với
-`ON DELETE SET NULL`. Nội dung nhắc, start/duration/deadline/notify/created được lưu
-riêng. Timestamp lịch nhắc là UTC ISO 8601; tính và hiển thị theo Asia/Ho_Chi_Minh.
-`cancelled` là trạng thái lịch, không phải soft-delete hồ sơ.
+## reminders và reminder_deliveries
 
-Xóa hồ sơ thực hiện trong cùng transaction: hủy lịch liên quan còn kênh chưa gửi,
-sau đó DELETE hồ sơ. Lịch sử và kết quả gửi được giữ với `record_id = NULL`.
+- `reminders.id` là UUID. `record_id` tùy chọn, `ON DELETE SET NULL`. Lưu nội dung,
+  deadline, `lead_seconds` (khoảng báo trước), `notify_at` (giờ gửi sau điều chỉnh),
+  `created_at`, `cancelled`; legacy `start_at`/`duration`, `record_managed`.
+- Timestamp UTC ISO 8601; tính và hiển thị theo Asia/Ho_Chi_Minh.
+- `reminder_deliveries`: khóa `(reminder_id, channel)`, channel `telegram` hoặc `windows`;
+  `state` `pending` / `sending` / `sent` / `failed`, số lần thử, giờ thử lại, lease 60 giây,
+  claim token, `sent_at`, lỗi đã loại thông tin nhạy cảm. `ON DELETE CASCADE` theo lịch.
+- Xóa hồ sơ (cùng transaction): hủy lịch liên quan còn kênh chưa gửi rồi xóa hồ sơ; lịch
+  sử gửi giữ lại với `record_id = NULL`.
+- Xóa lịch nhắc là vĩnh viễn (xóa luôn deliveries); lịch có kênh đang `sending` được giữ.
+- Claim dùng transaction ghi và token riêng; kênh `sent` không được chọn lại. Chống trùng
+  best effort, không exactly-once ([vận hành](../reminders/operations.md)).
 
-## Bảng reminder_deliveries
+## notification_templates
 
-Khóa ghép `(reminder_id, channel)`; channel chỉ `telegram` hoặc `windows`.
-Lưu `state` (`pending`, `sending`, `sent`, `failed`), số lần thử, giờ thử tiếp,
-lease, token claim, giờ gửi thành công và lỗi đã loại thông tin nhạy cảm.
+| Trường | Ghi chú |
+|---|---|
+| `id` | Khóa chính tự tăng |
+| `name`, `body` | Bắt buộc (không rỗng); `body` là văn bản thường nhiều dòng có biến `{{...}}` |
+| `is_default` | 0/1; unique index một phần bảo đảm tối đa một mẫu mặc định |
+| `updated_at` | UTC ISO 8601 |
 
-Claim sử dụng transaction ghi và token riêng; kênh `sent` không được chọn lại.
-Lease hết hạn sau 60 giây cho phép phục hồi khi tiến trình chết. Token cũ không
-thể ghi đè kết quả claim mới. Đây là chống trùng tốt nhất có thể, không bảo đảm
-exactly-once qua mạng; xem [vận hành nhắc](../reminders/operations.md).
+Quy tắc mẫu: [Nhắc nhở → Mẫu nội dung thông báo](../reminders/business-rules.md#mẫu-nội-dung-thông-báo).

@@ -1,6 +1,7 @@
 """Approved CPXD record data and validation, independent of adapters."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import StrEnum
 
 
@@ -51,7 +52,7 @@ class RecordData:
     received_at: str = ""
     processing_duration: int | None = None
     reminder_tracking_time: str = ""
-    overall_processing_time: str = ""
+    return_appointment_date: str = ""
     drawing_stamp_status: bool = False
     permit_stamp_status: bool = False
     handover_at: str = ""
@@ -59,6 +60,8 @@ class RecordData:
     recipient_name: str = ""
     status: RecordStatus = RecordStatus.INCOMPLETE
     notes: str = ""
+    deadline_at: str = ""
+    reminder_lead_seconds: int | None = None
 
     def __post_init__(self) -> None:
         for field in (
@@ -68,10 +71,11 @@ class RecordData:
             "address",
             "received_at",
             "reminder_tracking_time",
-            "overall_processing_time",
+            "return_appointment_date",
             "handover_at",
             "recipient_name",
             "notes",
+            "deadline_at",
         ):
             if not isinstance(getattr(self, field), str):
                 raise ValidationError("Thông tin theo dõi phải là văn bản.")
@@ -96,6 +100,22 @@ class RecordData:
                 raise ValidationError("Giá trị đóng dấu/ký nhận không hợp lệ.")
         if self.processing_duration is not None:
             validate_duration(self.processing_duration)
+        if self.deadline_at:
+            try:
+                deadline = datetime.fromisoformat(self.deadline_at)
+                if deadline.tzinfo is None:
+                    raise ValueError("Timezone required")
+                object.__setattr__(
+                    self, "deadline_at", deadline.astimezone(UTC).isoformat()
+                )
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    "Thời hạn xử lý phải là ngày/giờ hợp lệ."
+                ) from None
+        if self.reminder_lead_seconds is not None:
+            validate_duration(self.reminder_lead_seconds)
+            if not self.deadline_at:
+                raise ValidationError("Cần có deadline để đặt khoảng nhắc trước hạn.")
 
 
 @dataclass(frozen=True)

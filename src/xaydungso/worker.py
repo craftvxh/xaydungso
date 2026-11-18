@@ -10,11 +10,12 @@ from pathlib import Path
 from xaydungso.application.reminders import ReminderEngine
 from xaydungso.core.logging import configure_logging
 from xaydungso.core.paths import data_directory
-from xaydungso.infrastructure.database import Database, DatabaseVersionError
+from xaydungso.infrastructure.database import Database
 from xaydungso.infrastructure.notifications import (
     TelegramNotification,
     WindowsNotification,
 )
+from xaydungso.infrastructure.preferences import FilePreferences
 from xaydungso.infrastructure.reminders import SqliteReminders
 from xaydungso.infrastructure.worker_process import worker_lock
 
@@ -44,8 +45,11 @@ def main() -> int:
         database = Database(directory / "xaydungso.sqlite3")
         try:
             database.initialize()
-        except (OSError, sqlite3.Error, DatabaseVersionError):
-            logger.error("Database initialization failed; reminder worker stopped")
+            preferences = FilePreferences(directory).load()
+        except (OSError, sqlite3.Error, RuntimeError):
+            logger.error(
+                "Database or settings initialization failed; reminder worker stopped"
+            )
             logging.getLogger().removeHandler(handler)
             handler.close()
             return 1
@@ -53,7 +57,11 @@ def main() -> int:
         engine = ReminderEngine(
             SqliteReminders(database),
             {
-                "telegram": TelegramNotification(),
+                "telegram": TelegramNotification(
+                    preferences.telegram_token or None,
+                    preferences.telegram_chat_id or None,
+                    settings_directory=directory,
+                ),
                 "windows": WindowsNotification(),
             },
             should_stop=stop_file.exists,
