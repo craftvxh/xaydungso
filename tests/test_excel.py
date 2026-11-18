@@ -21,13 +21,13 @@ def mapped_row(code="0001"):
     # Rendered fixture, not a CPXD model or an approved display policy.
     row = dict.fromkeys(excel.COLUMNS, "")
     row.update(
-        B=code,
-        C="Nguyễn Văn Mẫu",
-        D="0123456789",
-        E="Địa chỉ mẫu",
-        N="Người nhận mẫu",
-        O=RecordStatus.INCOMPLETE.value,
-        P="=1+1 <ghi chú> & mẫu",
+        A=code,
+        B="Nguyễn Văn Mẫu",
+        C="0123456789",
+        D="Địa chỉ mẫu",
+        L="Người nhận mẫu",
+        M=RecordStatus.INCOMPLETE.value,
+        N="=1+1 <ghi chú> & mẫu",
     )
     return row
 
@@ -66,17 +66,15 @@ def test_snapshot_preserves_template_parts_layout_and_text(tmp_path):
         ) == (
             ElementTree.tostring(rendered.find(f"s:sheetData/s:row[@r='{index}']", NS))
         )
-    assert text_at(rendered, "A5") == "1"
-    assert text_at(rendered, "A6") == "2"
-    assert text_at(rendered, "B5") == "002"  # Caller order is explicit, not guessed.
-    assert text_at(rendered, "B6") == "001"
-    assert text_at(rendered, "C5") == "Nguyễn Văn Mẫu"
-    assert text_at(rendered, "D5") == "0123456789"
-    assert text_at(rendered, "P5") == "=1+1 <ghi chú> & mẫu"
+    assert text_at(rendered, "A5") == "002"  # Caller order is explicit, not guessed.
+    assert text_at(rendered, "A6") == "001"
+    assert text_at(rendered, "B5") == "Nguyễn Văn Mẫu"
+    assert text_at(rendered, "C5") == "0123456789"
+    assert text_at(rendered, "N5") == "=1+1 <ghi chú> & mẫu"
     assert rendered.findall(".//s:f", NS) == []
-    assert rendered.find(".//s:c[@r='D5']", NS).get("t") == "inlineStr"
+    assert rendered.find(".//s:c[@r='C5']", NS).get("t") == "inlineStr"
     assert rendered.find(".//s:row[@r='6']", NS).get("ht") == "22.5"
-    assert rendered.find(".//s:c[@r='B6']", NS).get("s") == "1"
+    assert rendered.find(".//s:c[@r='A6']", NS).get("s") == "1"
 
 
 def test_regeneration_reflects_updates_and_removes_old_rows(tmp_path):
@@ -85,11 +83,11 @@ def test_regeneration_reflects_updates_and_removes_old_rows(tmp_path):
         TEMPLATE, destination, tuple(mapped_row(str(i)) for i in range(25))
     )
     changed = mapped_row("updated")
-    changed["O"] = RecordStatus.COMPLETE.value
+    changed["M"] = RecordStatus.COMPLETE.value
     export_tracking_snapshot(TEMPLATE, destination, (changed,))
     root = sheet(destination)
-    assert text_at(root, "B5") == "updated"
-    assert text_at(root, "O5") == "Đã hoàn thành"
+    assert text_at(root, "A5") == "updated"
+    assert text_at(root, "M5") == "Đã hoàn thành"
     assert root.find(".//s:row[@r='6']", NS) is None
     export_tracking_snapshot(TEMPLATE, destination, ())
     root = sheet(destination)
@@ -112,13 +110,13 @@ def test_locked_output_is_preserved_and_full_retry_succeeds(tmp_path, monkeypatc
     assert destination.read_bytes() == before
     assert list(tmp_path.iterdir()) == [destination]
     export_tracking_snapshot(TEMPLATE, destination, (mapped_row("new"),))
-    assert text_at(sheet(destination), "B5") == "new"
+    assert text_at(sheet(destination), "A5") == "new"
 
 
 def test_corrupt_generated_file_never_replaces_output(tmp_path, monkeypatch):
     destination = tmp_path / "output.xlsx"
     destination.write_bytes(b"previous output")
-    monkeypatch.setattr(excel, "_worksheet", lambda *args: b"invalid XML")
+    monkeypatch.setattr(excel, "_worksheet", lambda *args, **kwargs: b"invalid XML")
     with pytest.raises(ExcelExportError):
         export_tracking_snapshot(TEMPLATE, destination, (mapped_row(),))
     assert destination.read_bytes() == b"previous output"
@@ -151,15 +149,15 @@ def test_refuses_template_aliases(tmp_path, alias):
 def test_invalid_input_preserves_output(tmp_path, invalid):
     row = mapped_row()
     if invalid == "missing":
-        del row["H"]
+        del row["G"]
     elif invalid == "status":
-        row["O"] = "Unapproved status"
+        row["M"] = "Unapproved status"
     elif invalid == "type":
-        row["F"] = 42
+        row["E"] = 42
     elif invalid == "control":
-        row["C"] = "Invalid\x00text"
+        row["B"] = "Invalid\x00text"
     else:
-        row["P"] = "x" * 32768
+        row["N"] = "x" * 32768
     destination = tmp_path / "output.xlsx"
     destination.write_bytes(b"previous output")
     with pytest.raises(ExcelExportError):

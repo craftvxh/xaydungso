@@ -16,11 +16,12 @@ Python 3.12 · PyQt6 · PyQt6-Fluent-Widgets · SQLite · uv · pytest · Ruff.
 - Apply KISS, YAGNI, DRY and Ponytail-style minimal-change principles, without sacrificing correctness.
 - Use `uv` for Python package/environment management; commit `uv.lock`.
 - Keep domain logic independent of UI, database drivers and document libraries.
-- SQLite is the authoritative data store; Excel is **one-way generated output** using `docs/modules/excel/templates/so_theo_doi.xlsx`.
+- SQLite is the authoritative data store; write one-way into a user-selected existing Excel workbook matching the approved 14-column layout (A–N, no STT column) in `docs/modules/excel/templates/so_theo_doi.xlsx`. The user explicitly chose to use so_theo_doi.xlsx itself as the working file. Keep one Excel setting and merge by record code; do not expose a replace-all mode or recreate the workbook during normal writes.
 - Do not implement Excel-to-SQLite import/sync, cloud integration, or database backup/restore.
 - Approved record statuses: `Chưa hoàn thành`, `Đã hoàn thành`.
+- Record CRUD never creates or edits reminders. The Reminders module independently owns scheduling using an absolute deadline minus a user-selected lead interval. Excel has no reminder-time column.
 - Deletion means permanent deletion; no soft-delete flag.
-- Preserve the approved Excel template byte-for-byte during normal exports.
+- Update the chosen working workbook (including so_theo_doi.xlsx itself) in place while preserving its layout and unrelated rows/parts. Do not overwrite the working workbook from an empty template.
 - Do not modify unrelated files or automatically commit/push.
 
 ## Document routing

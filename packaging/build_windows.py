@@ -39,6 +39,8 @@ def main() -> None:
             "xaydungso.worker",
             "--add-data",
             "docs/modules/excel/templates/so_theo_doi.xlsx:templates",
+            "--add-data",
+            "src/xaydungso/presentation/icons:xaydungso/presentation/icons",
             "--specpath",
             "build",
             "--distpath",

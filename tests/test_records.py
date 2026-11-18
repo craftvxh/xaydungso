@@ -24,6 +24,20 @@ from xaydungso.infrastructure.tracking_export import (
 )
 
 
+def test_v6_renames_column_g_field_and_keeps_existing_values(tmp_path):
+    path = tmp_path / "v5.sqlite3"
+    Database(path, MIGRATIONS[:5]).initialize()
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "INSERT INTO records(record_code, applicant_name, overall_processing_time,"
+            " created_at) VALUES ('001', 'Tên', '02/12/2026', '2026-11-18T00:00:00')"
+        )
+    database = Database(path)
+    database.initialize()
+    record = SqliteRecords(database).list()[0]
+    assert record.data.return_appointment_date == "02/12/2026"
+
+
 def test_upgrades_existing_foundation_database(tmp_path):
     path = tmp_path / "old.sqlite3"
     Database(path, MIGRATIONS[:1]).initialize()
@@ -31,7 +45,7 @@ def test_upgrades_existing_foundation_database(tmp_path):
     database.initialize()
     database.initialize()
     with database.connect() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
         tables = {
             row[0]
             for row in connection.execute(
@@ -132,9 +146,9 @@ def test_mapping_all_columns_and_manual_tracking():
         phone="0123456789",
         address="Địa chỉ",
         received_at="18/11/2026 08:00",
-        processing_duration=43200,
+        deadline_at="2026-11-18T02:00:00+00:00",
         reminder_tracking_time="Nhập tay H",
-        overall_processing_time="15 ngày theo dõi",
+        return_appointment_date="02/12/2026",
         drawing_stamp_status=True,
         permit_stamp_status=False,
         handover_at="19/11/2026",
@@ -145,16 +159,15 @@ def test_mapping_all_columns_and_manual_tracking():
     )
     assert tracking_row(data) == dict(
         zip(
-            "BCDEFGHIJKLMNOP",
+            "ABCDEFGHIJKLMN",
             (
                 "001",
                 "Nguyễn Mẫu",
                 "0123456789",
                 "Địa chỉ",
                 "18/11/2026 08:00",
-                "12 giờ",
-                "Nhập tay H",
-                "15 ngày theo dõi",
+                "18/11/2026 09:00:00",
+                "02/12/2026",
                 "Có",
                 "Chưa",
                 "19/11/2026",
@@ -173,7 +186,10 @@ def test_crud_export_and_failure_do_not_rollback_commit(
 ):
     repository = SqliteRecords(database)
     output = tmp_path / "so_theo_doi.xlsx"
-    service = Records(repository, SqliteTrackingExporter(repository, template, output))
+    output.write_bytes(template.read_bytes())
+    service = Records(
+        repository, SqliteTrackingExporter(repository, template, output, "replace")
+    )
     before = template.read_bytes()
     assert service.export() is None  # Empty database.
     first = service.save(RecordData("B", "Tên mẫu", phone="0123456789"))
@@ -193,8 +209,8 @@ def test_crud_export_and_failure_do_not_rollback_commit(
     with ZipFile(output) as archive:
         root = ElementTree.fromstring(archive.read(excel.SHEET_PART))
     ns = {"s": excel.NAMESPACE}
-    assert "".join(root.find(".//s:c[@r='B5']", ns).itertext()) == "B"
-    assert "".join(root.find(".//s:c[@r='B6']", ns).itertext()) == "A"
+    assert "".join(root.find(".//s:c[@r='A5']", ns).itertext()) == "B"
+    assert "".join(root.find(".//s:c[@r='A6']", ns).itertext()) == "A"
     assert (
         service.save(
             replace(first.record.data, notes="Đã sửa"), first.record.id
@@ -205,5 +221,5 @@ def test_crud_export_and_failure_do_not_rollback_commit(
     with ZipFile(output) as archive:
         root = ElementTree.fromstring(archive.read(excel.SHEET_PART))
     assert root.find(".//s:row[@r='6']", ns) is None
-    assert "".join(root.find(".//s:c[@r='P5']", ns).itertext()) == "Đã sửa"
+    assert "".join(root.find(".//s:c[@r='N5']", ns).itertext()) == "Đã sửa"
     assert template.read_bytes() == before

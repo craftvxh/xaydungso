@@ -1,42 +1,40 @@
-# Dashboard — Định nghĩa chỉ số
+# Tổng quan — Định nghĩa chỉ số
 
-## Snapshot và thời gian
+## Thời điểm và ngày
 
-Một lần tải lấy thời điểm `as_of` duy nhất, quy đổi sang **Asia/Ho_Chi_Minh**.
-Ngày hôm nay là từ 00:00:00 địa phương, bao gồm đầu ngày và không bao gồm 00:00:00
-ngày kế tiếp. Adapter chuyển các biên này sang timestamp UTC chuẩn hiện có trong SQLite.
-Không dựa vào timezone hệ điều hành, `created_at` của lịch hoặc các cột Excel theo dõi.
+Mỗi lần tải lấy một thời điểm `as_of` duy nhất theo **Asia/Ho_Chi_Minh**. "Hôm nay" là từ
+00:00:00 địa phương (gồm) tới 00:00:00 ngày kế tiếp (không gồm), quy đổi sang UTC để so với
+SQLite. Không dựa vào timezone hệ điều hành hay cột Excel.
 
-## Bốn chỉ số
+## Bốn thẻ và badge
+
+Người dùng duyệt 18/11/2026: thẻ thứ tư là **Quá hạn**, thay cho thẻ Nhắc hôm nay (số này
+chuyển sang badge của mục Nhắc nhở).
 
 | Nhãn | Định nghĩa |
 |---|---|
-| Tổng hồ sơ | COUNT các hàng hiện có trong `records` |
-| Chưa hoàn thành | COUNT hồ sơ có status chính xác `Chưa hoàn thành` |
-| Đã hoàn thành | COUNT hồ sơ có status chính xác `Đã hoàn thành` |
-| Nhắc hôm nay | COUNT lịch `cancelled = 0` có `notify_at` trong ngày địa phương hiện tại |
+| Tổng hồ sơ | Số hàng hiện có trong `records` (hồ sơ đã xóa vĩnh viễn không tính) |
+| Chưa hoàn thành | Số hồ sơ có status `Chưa hoàn thành`; cũng là badge mục Quản lý hồ sơ |
+| Đã hoàn thành | Số hồ sơ có status `Đã hoàn thành` |
+| Quá hạn | Số hồ sơ `Chưa hoàn thành` có hạn xử lý và hạn < `as_of` |
+| Nhắc hôm nay (badge Nhắc nhở) | Số **lịch** chưa hủy có `notify_at` trong hôm nay — gồm lịch đã và chưa gửi, đếm một lần dù có hai kênh |
 
-- Hồ sơ đã xóa vĩnh viễn không được tính; tổng hồ sơ bằng tổng hai trạng thái.
-- Nhắc hôm nay đếm **lịch duy nhất**, không đếm số lần gửi hoặc số kênh.
-- Chỉ số hôm nay bao gồm lịch đã gửi và chưa gửi có giờ gửi được lên lịch trong ngày;
-  loại lịch hủy. Đây không phải số thông báo gửi thành công hoặc số lịch còn chờ.
-- Lịch độc lập không liên kết hồ sơ vẫn được tính. Trạng thái hoàn thành hồ sơ không
-  tự hủy lịch, vì không có quy tắc nghiệp vụ như vậy.
-- Gửi bù không tự chuyển `notify_at` sang ngày thực gửi; không diễn giải chỉ số thành
-  số thông báo thực gửi hôm nay.
+- Tổng hồ sơ = Chưa hoàn thành + Đã hoàn thành. Hồ sơ đã hoàn thành hoặc chưa có hạn không quá hạn.
+- Lịch độc lập vẫn được đếm. Gửi bù không đổi `notify_at`, nên badge không phải "số tin thực gửi hôm nay".
+
+## Hồ sơ cần chú ý
+
+- Hồ sơ `Chưa hoàn thành` có hạn xử lý và **quá hạn** (hạn < `as_of`) hoặc **sắp hạn**
+  (`as_of` ≤ hạn < `as_of` + 24 giờ — người dùng chọn 24 giờ, 18/11/2026).
+- Thứ tự: quá hạn trước, rồi sắp hạn; mỗi nhóm theo hạn tăng dần rồi `id`. Hiển thị tối đa
+  **10** hồ sơ; chip số lượng đếm toàn bộ.
+- Cảnh báo: `Quá hạn`, hoặc `Sắp hạn (Còn N giờ)` / `(Còn N phút)` khi dưới 1 giờ (làm tròn lên).
+- Hạn đọc từ `records.deadline_at` (UTC ISO) và so sánh trong Python, không so chuỗi trong SQL.
 
 ## Lịch nhắc sắp tới
 
-- Lịch chưa hủy, `notify_at >= as_of`, còn ít nhất một kênh có state khác `sent`.
-- Lịch gửi thành công một kênh nhưng còn kênh chưa gửi vẫn chỉ xuất hiện một hàng.
-- Không bao gồm lịch quá hạn đang chờ gửi bù; xem toàn bộ trạng thái ở trang Nhắc nhở.
-- Thứ tự `notify_at ASC, id ASC`; hiển thị tối đa **10 lịch gần nhất** để giữ Dashboard gọn.
-  Nút Xem lịch nhắc mở trang quản lý tất cả lịch.
-- Hiển thị nội dung, mã hồ sơ nếu liên kết còn tồn tại (nếu không: `Không liên kết`),
-  và `notify_at` theo giờ Việt Nam. Không tự điền hoặc sửa bất kỳ trường nào.
-
-## Những gì không thuộc module
-
-Không biểu đồ, tỷ lệ dự đoán, phân tích hiệu suất, tính toán deadline mới, trạng thái
-hồ sơ bổ sung, truy vấn Excel hoặc Word Generation. Dashboard chỉ tổng hợp dữ liệu
-SQLite đã commit; không thay đổi hành vi scheduler hoặc điều kiện hoàn thành hồ sơ.
+- Lịch chưa hủy, `notify_at ≥ as_of`, còn ít nhất một kênh chưa `sent`; một thẻ cho mỗi lịch.
+- Không gồm lịch đã qua giờ đang chờ gửi bù (xem trang Nhắc nhở).
+- Thứ tự `notify_at ASC, id ASC`, tối đa **10** lịch.
+- Thẻ: nội dung, mã + họ tên hồ sơ nếu liên kết còn tồn tại (nếu không: `Không liên kết hồ sơ`),
+  giờ gửi theo giờ Việt Nam kèm `(Hôm nay)` / `(Ngày mai)`.

@@ -1,4 +1,4 @@
-"""Foundation defaults; no persistent user settings are needed yet."""
+"""Application metadata and initial window defaults."""
 
 import logging
 from dataclasses import dataclass
@@ -10,6 +10,6 @@ class AppSettings:
 
     app_name: str = "xaydungso"
     window_title: str = "Xây Dựng Số"
-    window_width: int = 1180
-    window_height: int = 740
+    window_width: int = 1280
+    window_height: int = 800
     log_level: int = logging.INFO

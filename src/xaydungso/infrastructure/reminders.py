@@ -11,6 +11,28 @@ from xaydungso.infrastructure.database import Database
 CHANNELS = ("telegram", "windows")
 
 
+def insert_reminder(connection, reminder: Reminder, *, record_managed=False):
+    connection.execute(
+        "INSERT INTO reminders(record_id,title,start_at,duration,deadline_at,notify_at,id,created_at,lead_seconds,record_managed) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (
+            reminder.record_id,
+            reminder.title,
+            timestamp(reminder.start_at),
+            reminder.duration,
+            timestamp(reminder.deadline_at),
+            timestamp(reminder.notify_at),
+            reminder.id,
+            timestamp(reminder.created_at),
+            reminder.lead_seconds,
+            int(record_managed),
+        ),
+    )
+    connection.executemany(
+        "INSERT INTO reminder_deliveries(reminder_id,channel,next_attempt_at) VALUES (?,?,?)",
+        [(reminder.id, channel, timestamp(reminder.notify_at)) for channel in CHANNELS],
+    )
+
+
 @dataclass(frozen=True)
 class Delivery:
     reminder_id: str
@@ -57,25 +79,15 @@ class SqliteReminders:
                         "Không thể sửa lịch đã gửi hoặc đang được gửi."
                     )
                 connection.execute(
-                    "UPDATE reminders SET record_id=?,title=?,start_at=?,duration=?,deadline_at=?,notify_at=? WHERE id=?",
-                    (*values, reminder.id),
+                    "UPDATE reminders SET record_id=?,title=?,start_at=?,duration=?,deadline_at=?,notify_at=?,lead_seconds=? WHERE id=?",
+                    (*values, reminder.lead_seconds, reminder.id),
                 )
                 connection.execute(
                     "UPDATE reminder_deliveries SET state='pending',next_attempt_at=?,lease_until=NULL,claim_token=NULL,last_error='' WHERE reminder_id=?",
                     (timestamp(reminder.notify_at), reminder.id),
                 )
             else:
-                connection.execute(
-                    "INSERT INTO reminders(record_id,title,start_at,duration,deadline_at,notify_at,id,created_at) VALUES (?,?,?,?,?,?,?,?)",
-                    (*values, reminder.id, timestamp(reminder.created_at)),
-                )
-                connection.executemany(
-                    "INSERT INTO reminder_deliveries(reminder_id,channel,next_attempt_at) VALUES (?,?,?)",
-                    [
-                        (reminder.id, channel, timestamp(reminder.notify_at))
-                        for channel in CHANNELS
-                    ],
-                )
+                insert_reminder(connection, reminder)
 
     def list(self) -> list[dict]:
         with self.database.connect() as connection:
@@ -90,6 +102,20 @@ class SqliteReminders:
                 key: row[key] for key in ("state", "attempts", "last_error", "sent_at")
             }
         return list(result.values())
+
+    def delete(self, reminder_ids) -> int:
+        """Permanently delete reminders (deliveries cascade); skip ones being sent."""
+        deleted = 0
+        with self.database.connect() as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            for reminder_id in reminder_ids:
+                deleted += connection.execute(
+                    "DELETE FROM reminders WHERE id=? AND NOT EXISTS "
+                    "(SELECT 1 FROM reminder_deliveries d WHERE d.reminder_id=reminders.id "
+                    "AND d.state='sending')",
+                    (reminder_id,),
+                ).rowcount
+        return deleted
 
     def cancel(self, reminder_id: str) -> None:
         with self.database.connect() as connection, connection:

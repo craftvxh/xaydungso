@@ -70,6 +70,7 @@ class SqliteRecords:
         values = asdict(data)
         try:
             with self.database.connect() as connection, connection:
+                connection.execute("BEGIN IMMEDIATE")
                 if record_id is None:
                     created = datetime.now(UTC).isoformat(timespec="microseconds")
                     cursor = connection.execute(

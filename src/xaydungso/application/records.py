@@ -1,6 +1,6 @@
 """CRUD followed by a separately retryable export of committed records."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from xaydungso.application.ports import RecordRepository, TrackingExporter
 from xaydungso.domain.records import Record, RecordData, RecordStatus
@@ -33,6 +33,31 @@ class Records:
         self.repository.delete(record_id)
         return SaveResult(None, self._export())
 
+    def delete_many(self, record_ids) -> SaveResult:
+        """Permanently delete several records, then update Excel once."""
+        return self._each(record_ids, self.repository.delete)
+
+    def set_status(self, record_ids, status: RecordStatus) -> SaveResult:
+        """Change the status of several records, then update Excel once."""
+
+        def change(record_id):
+            data = self.repository.get(record_id).data
+            if data.status is not status:
+                self.repository.save(replace(data, status=status), record_id)
+
+        return self._each(record_ids, change)
+
+    def _each(self, record_ids, action) -> SaveResult:
+        # Each record commits on its own; Excel still reflects whatever committed
+        # before a failure, and the error is re-raised for the caller to report.
+        try:
+            for record_id in tuple(record_ids):
+                action(record_id)
+        except Exception:
+            self._export()
+            raise
+        return SaveResult(None, self._export())
+
     def export(self) -> str | None:
         return self._export()
 
@@ -40,5 +65,5 @@ class Records:
         try:
             self.exporter.export()
         except (OSError, RuntimeError, ValueError):
-            return "Excel chưa cập nhật. Dữ liệu SQLite vẫn được giữ. Hãy đóng file Excel và chọn Xuất lại Excel."
+            return "Hồ sơ đã lưu, nhưng Excel chưa cập nhật. Kiểm tra File Excel làm việc trong Cài đặt, đóng file nếu đang mở; Excel sẽ được ghi lại ở lần lưu/sửa/xóa hồ sơ tiếp theo."
         return None

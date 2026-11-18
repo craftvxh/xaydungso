@@ -1,29 +1,29 @@
-# Xây Dựng Số — Documentation Index
+# Xây Dựng Số — Mục lục tài liệu
 
-This folder is the source of truth for approved design and business specifications. The root [README](../README.md) introduces the project; [AGENTS.md](../AGENTS.md) provides AI-agent working rules.
+Thư mục này là nguồn chính thức cho đặc tả đã duyệt. [README](../README.md) giới thiệu và
+hướng dẫn chạy; [AGENTS.md](../AGENTS.md) là quy tắc làm việc cho AI agent;
+[CONTEXT.md](../CONTEXT.md) tóm tắt các quyết định; [process.md](../process.md) là nhật ký bàn giao.
 
-| Khi thực hiện | Đọc tài liệu |
+| Khi làm việc với | Đọc |
 |---|---|
-| Kiến trúc tổng thể | [Architecture overview](architecture/overview.md), [Layers](architecture/layers.md), [Data flow](architecture/data-flow.md) |
-| Viết / review code | [Coding standards](development/coding-standards.md), [Testing](development/testing.md) |
-| Trạng thái triển khai / bàn giao | [Implementation status](development/implementation-status.md), [Tiến độ](../process.md) |
-| Xây dựng giao diện | [UI design](ui/design-guidelines.md) |
-| Dashboard / trang mở mặc định | [Overview](modules/dashboard/overview.md), [Metrics](modules/dashboard/metrics.md) |
-| Xử lý hồ sơ | [CPXD overview](modules/cpxd/overview.md), [Workflow](modules/cpxd/workflow.md), [Schema](modules/cpxd/schema.md) |
-| Xuất sổ Excel | [Excel overview](modules/excel/overview.md), [Field mapping](modules/excel/field-mapping.md), [Export workflow](modules/excel/export-workflow.md) |
-| Nhắc nhở | [Reminder overview](modules/reminders/overview.md), [Business rules](modules/reminders/business-rules.md), [Vận hành](modules/reminders/operations.md) |
-| Lập kế hoạch / nghiệm thu | [Roadmap](roadmap/overview.md), [Phase 01](roadmap/phase-01.md) |
+| Kiến trúc, layer, luồng dữ liệu | [Kiến trúc](architecture/overview.md), [Luồng dữ liệu](architecture/data-flow.md) |
+| Viết / review code, kiểm thử | [Coding standards](development/coding-standards.md), [Testing](development/testing.md) |
+| Giao diện (màu, icon, từng trang) | [UI design](ui/design-guidelines.md) |
+| Tổng quan (Dashboard) | [Bố cục](modules/dashboard/overview.md), [Chỉ số](modules/dashboard/metrics.md) |
+| Hồ sơ (CPXD) | [Quy tắc & workflow](modules/cpxd/overview.md), [Schema SQLite](modules/cpxd/schema.md) |
+| Sổ Excel | [Ghi sổ có sẵn](modules/excel/overview.md), [Mapping 14 cột](modules/excel/field-mapping.md) |
+| Nhắc nhở, mẫu thông báo | [Quy tắc](modules/reminders/business-rules.md), [Vận hành](modules/reminders/operations.md) |
+| Cài đặt (SQLite, Telegram, Excel) | [Cài đặt](modules/settings/overview.md) |
+| Phạm vi, tiến độ | [Lộ trình](roadmap/overview.md) |
+
+Mẫu sổ làm việc: [`modules/excel/templates/so_theo_doi.xlsx`](modules/excel/templates/so_theo_doi.xlsx)
+(cũng là file làm việc mặc định của ứng dụng).
 
 ## Quy tắc bảo trì
 
-- Mỗi đặc tả chi tiết chỉ có **một** nơi định nghĩa chính thức; các file khác liên kết đến đó.
-- Cập nhật tài liệu cùng thay đổi có ảnh hưởng đến hành vi, dữ liệu hoặc kiến trúc.
-- Không tự điền quy tắc nghiệp vụ còn thiếu: đánh dấu **TBD**.
-- Tạo module tài liệu mới dưới `docs/modules/<module>/` khi có module độc lập được phê duyệt.
-- Đọc đúng tài liệu liên quan; không cần tải toàn bộ tài liệu cho mọi tác vụ.
-
-**Trạng thái:** Tài liệu v1.0; các mục `TBD` chưa phải yêu cầu đã chốt.
-
-## Quyết định cập nhật
-
-Ưu tiên hiện tại: Dashboard mở mặc định, quản lý hồ sơ SQLite, nhắc nhở hai kênh, xuất sổ Excel. Dashboard chỉ đọc SQLite qua Application, không dùng Excel làm nguồn dữ liệu. Word Generation hoãn đến khi cung cấp đủ mẫu.
+- Mỗi quy tắc chỉ định nghĩa ở **một** file; file khác liên kết tới đó.
+- Cập nhật tài liệu cùng lúc với thay đổi hành vi, dữ liệu, schema hoặc kiến trúc.
+- Không tự điền quy tắc nghiệp vụ còn thiếu: ghi rõ "chưa có đặc tả" hoặc **TBD**.
+- Ghi ngày và nguồn (người dùng duyệt, bản thiết kế) khi một quyết định thay thế quyết định cũ.
+- Tạo `docs/modules/<module>/` chỉ khi có module độc lập được phê duyệt.
+- Nhật ký phiên làm việc và kết quả test ghi vào `process.md`, không thêm file trạng thái trong `docs/`.

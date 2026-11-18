@@ -1,30 +1,37 @@
-# Data Flow — SQLite as Source of Truth
+# Luồng dữ liệu — SQLite là nguồn chính
 
 ## Hồ sơ
 
-`UI → Application validation / Domain rules → SQLite commit`.
+`Form → Application/Domain kiểm tra → SQLite commit → ghi Excel`
 
-- Thao tác tạo, sửa, xóa hồ sơ đều thực hiện qua ứng dụng.
-- Không lấy Excel làm nguồn dữ liệu cập nhật.
-- Xóa hồ sơ là xóa vĩnh viễn sau khi xác nhận phù hợp trong UI.
+- Mọi thêm/sửa/xóa hồ sơ đi qua ứng dụng; xóa là vĩnh viễn sau xác nhận.
+- Lưu hồ sơ không tạo hay sửa lịch nhắc. Xóa hồ sơ hủy các lịch liên quan chưa gửi (cùng transaction).
+- Không đọc dữ liệu hồ sơ từ Excel.
 
-## Xuất sổ theo dõi
+## Sổ Excel
 
-`SQLite (committed records) → Excel Exporter → generated .xlsx`
+`SQLite (hồ sơ đã commit) → writer → file .xlsx có sẵn do người dùng chọn`
 
-- Xuất lại toàn bộ danh sách sau các thay đổi liên quan đến sổ, dùng [mẫu Excel](../modules/excel/overview.md).
-- Lỗi xuất Excel **không** hoàn tác dữ liệu SQLite đã commit.
-- File mẫu gốc không bao giờ bị ghi đè.
-- Ghi tệp đầu ra qua file tạm và thay thế an toàn khi có thể.
+- Ghi tự động sau mỗi thay đổi hồ sơ; giữ dòng cũ, thêm/sửa theo mã hồ sơ, giữ bố cục workbook.
+- Lỗi Excel **không** hoàn tác SQLite; ghi qua file tạm rồi thay thế an toàn.
+- Chi tiết: [Excel](../modules/excel/overview.md).
 
 ## Nhắc nhở
 
-`SQLite reminder data → Scheduler → Time rules → Notification channel`.
+`Form lịch (+ mẫu thông báo) → SQLite (reminders, deliveries) → worker → Telegram / Windows`
 
-- Tính toán nhắc nhở độc lập với Excel; Excel không điều khiển scheduler.
-- Quy tắc thời gian: [Reminder business rules](../modules/reminders/business-rules.md).
-- Phương thức gửi và cơ chế chạy nền là phần triển khai tương lai, không có trong Foundation.
+- Nội dung lịch được tạo từ mẫu (`notification_templates`) khi người dùng chọn mẫu trong form;
+  lịch lưu nội dung đã điền biến.
+- Giờ gửi = hạn xử lý − khoảng báo trước, áp dụng khung 07:00–23:00
+  ([quy tắc](../modules/reminders/business-rules.md)).
+- Worker claim từng kênh, gửi, ghi kết quả/thử lại; độc lập Qt và Excel. Excel không chứa giờ nhắc.
 
-## Văn bản Word
+## Tổng quan và Cài đặt
 
-`SQLite / Domain calculation → Document generation → Word file` (tương lai; mapping theo mẫu Word sẽ được đặc tả riêng).
+- Tổng quan đọc một snapshot SQLite qua Application ([metrics](../modules/dashboard/metrics.md)).
+- Cài đặt đọc số liệu chỉ đọc (`SqliteDiagnostics`) và lưu cấu hình vào `settings.json`
+  (token mã hóa DPAPI); worker đọc lại cấu hình Telegram trước mỗi lần gửi.
+
+## Văn bản Word (tương lai)
+
+`SQLite / tính toán Domain → tạo văn bản → file Word` — hoãn tới khi có mẫu và mapping được duyệt.

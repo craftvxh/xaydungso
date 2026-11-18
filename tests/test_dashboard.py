@@ -126,3 +126,54 @@ def test_deletion_cancels_linked_schedule_without_hiding_standalone(database):
     snapshot = view(database, now)
     assert snapshot.todays_reminders == 1
     assert [item.id for item in snapshot.upcoming] == ["standalone"]
+
+
+def test_overdue_and_due_within_24_hours_need_attention(database):
+    now = local_time(datetime(2026, 11, 18, 10))
+    records = SqliteRecords(database)
+
+    def add(code, deadline, status=RecordStatus.INCOMPLETE):
+        return records.save(
+            RecordData(
+                code,
+                f"Tên {code}",
+                address="Địa chỉ",
+                deadline_at=deadline.astimezone(UTC).isoformat() if deadline else "",
+                status=status,
+            )
+        )
+
+    add("LATE-2", now - timedelta(hours=1))
+    add("LATE-1", now - timedelta(days=2))
+    add("SOON", now + timedelta(hours=23, minutes=59))
+    add("EDGE", now + timedelta(hours=24))  # Exactly 24h away: not yet due soon.
+    add("LATER", now + timedelta(days=3))
+    add("DONE", now - timedelta(days=1), RecordStatus.COMPLETE)
+    add("NONE", None)
+    snapshot = view(database, now)
+    assert snapshot.overdue_records == 2  # Completed records are never overdue.
+    assert [item.record_code for item in snapshot.attention] == [
+        "LATE-1",
+        "LATE-2",
+        "SOON",
+    ]
+    assert snapshot.attention_total == 3
+    assert snapshot.attention[0].applicant_name == "Tên LATE-1"
+
+
+def test_attention_list_is_capped_but_total_counts_all(database):
+    now = local_time(datetime(2026, 11, 18, 10))
+    records = SqliteRecords(database)
+    for number in range(12):
+        records.save(
+            RecordData(
+                f"HS-{number:02d}",
+                "Tên",
+                deadline_at=(now - timedelta(hours=number + 1))
+                .astimezone(UTC)
+                .isoformat(),
+            )
+        )
+    snapshot = view(database, now)
+    assert len(snapshot.attention) == 10
+    assert snapshot.attention_total == 12 == snapshot.overdue_records

@@ -66,6 +66,42 @@ class Reminder:
     deadline_at: datetime
     notify_at: datetime
     created_at: datetime
+    lead_seconds: int | None = None
+
+
+def make_deadline_reminder(
+    title: str,
+    deadline_at: datetime,
+    lead_seconds: int,
+    *,
+    created_at=None,
+    record_id=None,
+    reminder_id=None,
+) -> Reminder:
+    validate_duration(lead_seconds)
+    if not title.strip():
+        raise ValidationError("Nội dung nhắc không được để trống.")
+    deadline = local_time(deadline_at)
+    created = local_time(created_at or datetime.now(LOCAL_ZONE))
+    try:
+        requested = (
+            deadline.astimezone(UTC) - timedelta(seconds=lead_seconds)
+        ).astimezone(LOCAL_ZONE)
+    except (OverflowError, ValueError):
+        raise ValidationError("Khoảng nhắc trước vượt quá ngày được hỗ trợ.") from None
+    # Keep existing permitted-hours policy, applying it to the requested reminder time.
+    notify = notification_time(requested, created)
+    return Reminder(
+        reminder_id or str(uuid4()),
+        title.strip(),
+        record_id,
+        created,
+        lead_seconds,
+        deadline,
+        notify,
+        created,
+        lead_seconds,
+    )
 
 
 def make_reminder(
