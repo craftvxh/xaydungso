@@ -4,6 +4,7 @@ import logging
 import sqlite3
 import sys
 
+from PyQt6 import sip
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
@@ -28,6 +29,11 @@ from xaydungso.infrastructure.tracking_export import SqliteTrackingExporter
 from xaydungso.infrastructure.worker_process import BackgroundReminders
 from xaydungso.presentation.icons import LOGO
 from xaydungso.presentation.main_window import MainWindow
+from xaydungso.presentation.single_instance import (
+    InstanceServer,
+    instance_name,
+    notify_running,
+)
 from xaydungso.presentation.taskbar import set_taskbar_identity
 from xaydungso.presentation.theme import configure_theme
 
@@ -46,12 +52,16 @@ def main() -> int:
     settings = AppSettings()
     configure_logging(settings.log_level)
     app = QApplication(sys.argv)
+    directory = data_directory()
+    instance = instance_name(directory)
+    if notify_running(instance):
+        logger.info("Already running; showed the open window")
+        return 0
     configure_theme(app)
     app.setApplicationName(settings.app_name)
     app.setApplicationDisplayName(settings.window_title)
     app.setWindowIcon(QIcon(str(LOGO)))
 
-    directory = data_directory()
     database = Database(directory / "xaydungso.sqlite3")
     user_settings = Settings(
         FilePreferences(directory),
@@ -105,7 +115,14 @@ def main() -> int:
     )
     set_taskbar_identity(window)  # Taskbar shows the app logo, not Python's.
     window.show()
+    server = InstanceServer(window.bring_to_front, instance, app)
     logger.info("Application started")
     exit_code = app.exec()
     logger.info("Application stopped (exit code %s)", exit_code)
+    # Delete the window (with its tray icon) while QApplication still exists. The
+    # tray and the instance server keep Python references to the window, so it
+    # would otherwise be destroyed at interpreter exit, after QApplication, and
+    # crash in Qt6Widgets (0xC0000005) after a clean exit.
+    server.close()
+    sip.delete(window)
     return exit_code

@@ -32,12 +32,14 @@ def main() -> None:
             "tzdata",
             "--hidden-import",
             "xaydungso.worker",
+            # Absolute sources: --specpath build makes relative ones resolve
+            # against build/, not the project root.
             "--add-data",
-            "docs/modules/excel/templates/so_theo_doi.xlsx:templates",
+            f"{root / 'docs/modules/excel/templates/so_theo_doi.xlsx'};templates",
             "--add-data",
-            "src/xaydungso/presentation/icons:xaydungso/presentation/icons",
+            f"{root / 'src/xaydungso/presentation/icons'};xaydungso/presentation/icons",
             "--add-data",
-            "src/xaydungso/presentation/logo.svg:xaydungso/presentation",
+            f"{root / 'src/xaydungso/presentation/logo.svg'};xaydungso/presentation",
             "--icon",
             str(root / "packaging" / "xaydungso.ico"),
             "--specpath",

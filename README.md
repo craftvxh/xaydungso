@@ -28,6 +28,9 @@ Nhấp đúp `chay_xaydungso.vbs` (hoặc `chay_xaydungso.bat`) trong thư mục
 [uv](https://docs.astral.sh/uv/); launcher dùng `uv.lock` và chạy ẩn, lỗi báo bằng hộp thoại, log
 lần chạy gần nhất ở `%LOCALAPPDATA%\xaydungso\launcher.log`. Giữ hai file launcher cùng thư mục.
 
+Đóng cửa sổ (X) chỉ ẩn phần mềm xuống khay hệ thống; nhấp đúp icon ở khay để mở lại, chuột phải →
+**Thoát** để tắt hẳn. Mở phần mềm lần nữa khi đang chạy sẽ hiện lại cửa sổ cũ, không mở thêm bản mới.
+
 Sau khi cập nhật code: đóng và mở lại phần mềm; nếu nhắc nền đang chạy, dừng rồi bật lại.
 
 ## Dữ liệu

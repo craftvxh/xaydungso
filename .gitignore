@@ -1,10 +1,44 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
-build/
-dist/
-wheels/
 *.egg-info
 
 # Virtual environments
 .venv
+
+# Build output (PyInstaller, Inno Setup): rebuild instead of committing
+build/
+dist/
+wheels/
+*.spec
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Claude Code: personal settings (project rules and docs in .claude/ stay tracked)
+.claude/settings.local.json
+
+# Logs and local runtime data (the app keeps its data in %LOCALAPPDATA%\xaydungso)
+*.log
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+settings.json
+
+# Excel lock files while a workbook is open (e.g. ~$so_theo_doi.xlsx)
+~$*
+
+# Personal scratch file, not part of the project
+text.java
+
+# Windows and editors
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.vscode/
+.idea/
+*.swp
