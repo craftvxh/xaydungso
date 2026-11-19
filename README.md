@@ -55,9 +55,19 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Đóng gói Windows: `uv run python packaging/build_windows.py` (PyInstaller; chưa nghiệm thu bản
-`.exe`, chưa có installer). Nhắc nền tự chạy ẩn khi đăng nhập Windows (lối tắt trong Startup, tạo ở
-lần mở app đầu tiên; tắt ở Cài đặt → Telegram Bot hoặc Task Manager → Startup apps).
+Đóng gói Windows (dừng nhắc nền và Thoát app trước):
+
+1. `uv run python packaging/build_windows.py` → `dist\XayDungSo\XayDungSo.exe` (PyInstaller).
+2. Biên dịch bộ cài bằng Inno Setup 7 → `dist\xaydungso_setup.exe`:
+   `& "$env:LOCALAPPDATA\Programs\Inno Setup 7\ISCC.exe" packaging\xaydungso.iss`
+
+Bộ cài cài cho riêng người dùng (không cần admin) vào `%LOCALAPPDATA%\Programs\XayDungSo`, tạo lối
+tắt Start Menu (Desktop tùy chọn), tự tắt bản đang chạy trước khi cài đè; gỡ cài đặt xóa lối tắt
+Startup nhưng giữ dữ liệu `%LOCALAPPDATA%\xaydungso`. Chưa ký số (dùng nội bộ). Mỗi bản mới: tăng
+`version` trong `pyproject.toml` và `AppVersion` trong `packaging/xaydungso.iss`, giữ nguyên `AppId`.
+
+Nhắc nền tự chạy ẩn khi đăng nhập Windows (lối tắt trong Startup, tạo ở lần mở app đầu tiên; tắt ở
+Cài đặt → Telegram Bot hoặc Task Manager → Startup apps).
 
 ## Tài liệu
 
