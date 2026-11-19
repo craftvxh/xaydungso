@@ -5,9 +5,9 @@ import weakref
 
 from PyQt6 import sip
 from PyQt6.QtCore import QEvent, QObject, Qt, QTimer
-from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtGui import QColor, QFont, QPalette
 from PyQt6.QtWidgets import QApplication, QWidget
-from qfluentwidgets import Theme, setCustomStyleSheet, setTheme, setThemeColor
+from qfluentwidgets import Theme, qconfig, setCustomStyleSheet, setTheme, setThemeColor
 
 
 def white_palette() -> QPalette:
@@ -65,6 +65,42 @@ COLORS = {
     "done_fg": "#15803d",
 }
 
+# Typography: change the families here to restyle the whole app. One type
+# scale (px) for every page and dialog; QSS uses the @fs_* / @font / @mono
+# tokens, Python code uses ui_font() / mono_font().
+FONT_FAMILIES = ["Segoe UI", "Microsoft YaHei"]
+MONO_FAMILIES = ["Consolas", "Courier New"]
+TYPE = {
+    "fs_page": "22px",  # Page titles.
+    "fs_heading": "16px",  # Dialog, panel and section titles.
+    "fs_stat": "24px",  # Big numbers on metric cards.
+    "fs_body": "13px",  # Labels, table cells, buttons, inputs.
+    "fs_small": "12px",  # Muted notes, captions, footers.
+    "fs_tiny": "11px",  # Chips, badges, uppercase group labels.
+    "fs_mono": "12px",  # Record codes and date-times.
+    "font": ", ".join(f'"{name}"' for name in FONT_FAMILIES),
+    "mono": ", ".join(f'"{name}"' for name in MONO_FAMILIES),
+}
+TOKENS = {**COLORS, **TYPE}
+
+
+def _px(token: str) -> int:
+    return int(TYPE[token].removesuffix("px"))
+
+
+def ui_font(token="fs_body", weight=QFont.Weight.Normal) -> QFont:
+    font = QFont()
+    font.setFamilies(FONT_FAMILIES)
+    font.setPixelSize(_px(token))
+    font.setWeight(weight)
+    return font
+
+
+def mono_font(token="fs_mono", weight=QFont.Weight.Normal) -> QFont:
+    font = ui_font(token, weight)
+    font.setFamilies(MONO_FAMILIES)
+    return font
+
 
 def _in_styled(widget) -> bool:
     """Widgets inside a styled container keep that container's accent QSS."""
@@ -76,19 +112,35 @@ def _in_styled(widget) -> bool:
 
 
 def qss(text: str) -> str:
-    """Replace @token names with COLORS values (longest names first)."""
-    for name in sorted(COLORS, key=len, reverse=True):
-        text = text.replace(f"@{name}", COLORS[name])
+    """Replace @token names with COLORS/TYPE values (longest names first)."""
+    for name in sorted(TOKENS, key=len, reverse=True):
+        text = text.replace(f"@{name}", TOKENS[name])
     return text
 
 
 def styled(widget, sheet: str):
     """Opt a container (and its children) out of the forced white sheet."""
     widget.setProperty("xdsStyled", True)
-    # Same family Fluent widgets use, so QSS font sizes keep Vietnamese glyphs.
+    # One family for everything inside and the body size for Fluent controls
+    # (their own default is 14px). Labels get sizes from each page's QLabel
+    # rules: a nested container's sheet beats its parent's, so no catch-all
+    # label size here. [mono="true"] marks record codes and date-times.
     widget.setStyleSheet(
-        '* { font-family: "Segoe UI", "Microsoft YaHei"; }\n' + qss(sheet)
+        qss(
+            "* { font-family: @font; }\n"
+            "QAbstractButton, QLineEdit, QTextEdit, QPlainTextEdit,"
+            " QAbstractSpinBox, QComboBox { font-size: @fs_body; }\n"
+            '*[mono="true"] { font-family: @mono; }\n' + sheet
+        )
     )
+    return widget
+
+
+def set_mono(widget):
+    """Render a widget's text in the monospace family (codes, date-times)."""
+    widget.setProperty("mono", True)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
     return widget
 
 
@@ -169,6 +221,7 @@ def configure_theme(app: QApplication) -> None:
     setTheme(Theme.LIGHT, save=False)
     # Navy primary from the design: nav indicator, focus and checked accents.
     setThemeColor(QColor(COLORS["primary"]), save=False)
+    qconfig.set(qconfig.fontFamilies, FONT_FAMILIES, save=False)
     app.setPalette(white_palette())
     app.setStyleSheet(
         "QWidget { background-color: #ffffff; color: #000000; } QToolTip { background-color: #ffffff; color: #000000; border: 1px solid #000000; }"

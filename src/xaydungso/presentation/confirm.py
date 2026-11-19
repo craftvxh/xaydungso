@@ -3,7 +3,11 @@
 from PyQt6.QtGui import QColor
 from qfluentwidgets import MessageBox, setCustomStyleSheet
 
-from xaydungso.presentation.theme import qss
+from xaydungso.presentation.theme import qss, ui_font
+
+# Same type scale as CardDialog titles and body text.
+TITLE = qss("QLabel { font-family: @font; font-size: @fs_heading; font-weight: 600; }")
+BODY = qss("QLabel { font-family: @font; font-size: @fs_body; }")
 
 # DESIGN.md "Level 4" modal veil: #0F172A at ~30% instead of Fluent's light
 # theme default (white 60%), which the app's white theme made fully opaque.
@@ -22,6 +26,10 @@ class ConfirmBox(MessageBox):
         # Keep Fluent's own look: skip the app-wide forced white restyling.
         self.setProperty("xdsStyled", True)
         self.setMaskColor(VEIL)
+        self.titleLabel.setStyleSheet(TITLE)
+        self.contentLabel.setStyleSheet(BODY)
+        for button in (self.yesButton, self.cancelButton):
+            button.setFont(ui_font())
         self.yesButton.setText(yes)
         self.cancelButton.setText(no)
         if danger:

@@ -3,7 +3,6 @@
 from datetime import UTC, datetime, timedelta
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -28,7 +27,7 @@ from xaydungso.presentation.card_dialog import CardDialog
 from xaydungso.presentation.forms import TIME_FORMAT, parse_time, time_text
 from xaydungso.presentation.icons import Icon, colored_icon
 from xaydungso.presentation.record_widgets import compact_checkbox
-from xaydungso.presentation.theme import COLORS
+from xaydungso.presentation.theme import COLORS, set_mono
 
 TIME_PLACEHOLDER = "dd/mm/yyyy hh:mm"
 # Manually typed date fields: new or changed values must use TIME_FORMAT;
@@ -40,20 +39,20 @@ TIMED_FIELDS = (
 )
 
 SHEET = """
-QLabel[role="section"] { font-size: 12px; font-weight: 700; }
+QLabel[role="section"] { font-size: @fs_tiny; font-weight: 700; }
 QFrame[role="sectionBar"] { background: @primary; border: none; }
 QFrame[role="rule"] { background: @outline_soft; border: none; max-height: 1px; }
-QLabel[role="field"] { font-size: 12px; font-weight: 500; }
-QLabel[role="required"] { color: @error; font-size: 11px; }
+QLabel[role="field"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="required"] { color: @error; font-size: @fs_small; }
 QLabel[role="formatHint"] { background: @surface_container; color: @muted;
-    border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+    border-radius: 6px; padding: 3px 8px; font-size: @fs_tiny; }
 QPushButton[role="choice"] { background: @surface; border: 1px solid @outline;
     border-radius: 6px; text-align: left; }
 QPushButton[role="choice"]:hover { background: @surface_faint; }
 QPushButton[role="choice"]:checked { background: @surface_container;
     border: 2px solid @primary; }
-QLabel[role="choiceTitle"] { font-size: 12px; font-weight: 600; }
-QLabel[role="choiceHint"] { color: @muted; font-size: 11px; }
+QLabel[role="choiceTitle"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="choiceHint"] { color: @muted; font-size: @fs_small; }
 """
 
 
@@ -159,11 +158,7 @@ class RecordDialog(CardDialog):
             "Địa chỉ xây dựng công trình",
             "Số nhà, tên đường, phường/xã, quận/huyện...",
         )
-        mono = QFont()
-        mono.setFamilies(["Consolas", "Courier New"])
-        mono.setPixelSize(13)
-        mono.setWeight(QFont.Weight.DemiBold)
-        self.inputs["record_code"].setFont(mono)
+        set_mono(self.inputs["record_code"])
 
         # 2. Process & dates.
         hint = QLabel("ⓘ  Định dạng bắt buộc: dd/MM/yyyy HH:mm")

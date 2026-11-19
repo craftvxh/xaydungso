@@ -13,6 +13,8 @@ from qfluentwidgets import FluentIconBase, Theme, isDarkTheme
 from qfluentwidgets.common.icon import SvgIconEngine, writeSvg
 
 ICON_DIR = Path(__file__).resolve().parent / "icons"
+# Application logo (window, taskbar, Alt+Tab); the .exe uses packaging/xaydungso.ico.
+LOGO = Path(__file__).resolve().parent / "logo.svg"
 LIGHT_FILL, DARK_FILL = "#212121", "#ffffff"
 
 

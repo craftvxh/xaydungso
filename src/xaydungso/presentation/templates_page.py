@@ -39,15 +39,15 @@ DIVIDER = "────────────"
 
 SHEET = """
 QWidget#templates { background: @page; }
-QLabel { background: transparent; color: @text; font-size: 12px; }
-QLabel#tplTitle { font-size: 22px; font-weight: 700; }
-QLabel[role="muted"] { color: @muted; font-size: 12px; }
-QLabel[role="small"] { color: @muted; font-size: 11px; }
-QLabel[role="panelTitle"] { font-size: 15px; font-weight: 700; }
-QLabel[role="field"] { font-size: 12px; font-weight: 500; }
+QLabel { background: transparent; color: @text; font-size: @fs_body; }
+QLabel#tplTitle { font-size: @fs_page; font-weight: 700; }
+QLabel[role="muted"] { color: @muted; font-size: @fs_small; }
+QLabel[role="small"] { color: @muted; font-size: @fs_small; }
+QLabel[role="panelTitle"] { font-size: @fs_heading; font-weight: 600; }
+QLabel[role="field"] { font-size: @fs_body; font-weight: 600; }
 QLabel[role="chip"] { background: @surface_container; color: @primary;
-    border-radius: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
-QLabel#savedChip { color: @muted; font-size: 11px; }
+    border-radius: 8px; padding: 1px 8px; font-size: @fs_tiny; font-weight: 600; }
+QLabel#savedChip { color: @muted; font-size: @fs_small; }
 QLabel#savedChip[dirty="true"] { color: #b45309; font-weight: 600; }
 QFrame[role="panel"] { background: @surface; border: 1px solid @outline_soft;
     border-radius: 10px; }
@@ -56,9 +56,9 @@ QPushButton[role="tplCard"] { background: transparent; border: none;
     border-radius: 8px; text-align: left; }
 QPushButton[role="tplCard"]:hover { background: @surface_low; }
 QPushButton[role="tplCard"]:checked { background: @surface_container; }
-QLabel[role="cardName"] { font-size: 13px; font-weight: 600; }
+QLabel[role="cardName"] { font-size: @fs_body; font-weight: 600; }
 QLabel[role="defaultChip"] { background: @surface_highest; color: @primary;
-    border-radius: 4px; padding: 0 6px; font-size: 10px; font-weight: 700; }
+    border-radius: 4px; padding: 0 6px; font-size: @fs_tiny; font-weight: 700; }
 QFrame#toolbarBox { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
 QFrame#varBox { background: @surface_low; border: 1px solid @outline_soft;
@@ -67,16 +67,16 @@ QFrame#previewFrame { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
 QFrame#bubble { background: @surface; border: 1px solid @outline_soft;
     border-radius: 8px; }
-QLabel#bubbleHead { font-size: 13px; font-weight: 700; }
+QLabel#bubbleHead { font-size: @fs_body; font-weight: 700; }
 QLabel#botChip { background: #dbeafe; color: #1d4ed8; border-radius: 4px;
-    padding: 0 5px; font-size: 9px; font-weight: 700; }
-QLabel#previewText { font-size: 12px; }
+    padding: 0 5px; font-size: @fs_tiny; font-weight: 700; }
+QLabel#previewText { font-size: @fs_body; }
 QFrame#tplFooter { background: @surface; border: none;
     border-top: 1px solid @outline_soft; border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px; }
-QLabel#tplError { color: @error; font-size: 12px; }
+QLabel#tplError { color: @error; font-size: @fs_small; }
 QPushButton[role="segment"] { background: transparent; border: 1px solid transparent;
-    border-radius: 6px; padding: 4px 10px; font-size: 12px; color: @muted; }
+    border-radius: 6px; padding: 4px 10px; font-size: @fs_small; color: @muted; }
 QPushButton[role="segment"]:checked { background: @surface; color: @text;
     border-color: @outline; font-weight: 600; }
 QFrame#segmentBox { background: @surface_low; border: 1px solid @outline_soft;

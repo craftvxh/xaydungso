@@ -2,8 +2,8 @@
 
 import math
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QFrame,
@@ -27,49 +27,72 @@ from xaydungso.application.dashboard import Dashboard, DashboardSnapshot, is_ove
 from xaydungso.domain.reminders import LOCAL_ZONE
 from xaydungso.presentation.icons import Icon, colored_icon
 from xaydungso.presentation.record_widgets import icon_label
-from xaydungso.presentation.theme import COLORS, accent_button, qss, styled
+from xaydungso.presentation.theme import (
+    COLORS,
+    accent_button,
+    mono_font,
+    qss,
+    styled,
+)
 
 SHEET = """
 QWidget#dashboard { background: @page; }
-QLabel { background: transparent; color: @text; font-size: 12px; }
-QLabel#dashTitle { font-size: 22px; font-weight: 700; }
-QLabel#dashSubtitle { color: @muted; font-size: 12px; }
+QLabel { background: transparent; color: @text; font-size: @fs_body; }
+QLabel#dashTitle { font-size: @fs_page; font-weight: 700; }
+QLabel#dashSubtitle { color: @muted; font-size: @fs_small; }
 QLabel#syncChip { background: @surface_container; color: @muted; border-radius: 8px;
-    padding: 2px 8px; font-size: 11px; }
+    padding: 2px 8px; font-size: @fs_tiny; }
 QFrame[role="metric"], QFrame[role="panel"] { background: @surface;
     border: 1px solid @outline_soft; border-radius: 10px; }
-QFrame[role="metric"][alert="true"] { background: #fdeeee; border-color: #f5c9c9; }
-QLabel[role="metricTitle"] { color: @muted; font-size: 12px; }
-QLabel[role="metricValue"] { font-size: 26px; font-weight: 700; }
-QLabel[role="metricNote"] { color: @muted; font-size: 11px; }
+QFrame[role="metric"][tone="pending"] { background: #fffbeb; border-color: #fde68a; }
+QFrame[role="metric"][tone="done"] { background: #f0fdf4; border-color: #bbf7d0; }
+QFrame[role="metric"][tone="alert"] { background: #fdeeee; border-color: #f5c9c9; }
+QLabel[role="metricTitle"][tone="pending"], QLabel[role="metricNote"][tone="pending"] {
+    color: @pending_fg; }
+QLabel[role="metricTitle"][tone="done"], QLabel[role="metricNote"][tone="done"] {
+    color: @done_fg; }
+QLabel[role="metricTitle"][tone="alert"], QLabel[role="metricNote"][tone="alert"] {
+    color: @error; }
+QLabel[role="metricTitle"] { color: @muted; font-size: @fs_small; }
+QLabel[role="metricValue"] { font-size: @fs_stat; font-weight: 700; }
+QLabel[role="metricNote"] { color: @muted; font-size: @fs_small; }
 QLabel[role="iconTile"] { background: @surface_container; border-radius: 6px; }
-QLabel[role="iconTile"][alert="true"] { background: #fbd5d5; }
-QLabel[role="iconTile"][done="true"] { background: @done_bg; }
+QLabel[role="iconTile"][tone="pending"] { background: @pending_bg; }
+QLabel[role="iconTile"][tone="done"] { background: @done_bg; }
+QLabel[role="iconTile"][tone="alert"] { background: #fbd5d5; }
 QLabel[role="chip"] { background: @surface_container; color: @primary;
-    border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 600; }
-QLabel[role="chip"][alert="true"] { background: #fbd5d5; color: @error; }
-QLabel[role="panelTitle"] { font-size: 15px; font-weight: 700; }
+    border-radius: 4px; padding: 1px 6px; font-size: @fs_tiny; font-weight: 600; }
+QLabel[role="chip"][tone="alert"] { background: #fbd5d5; color: @error; }
+QLabel[role="panelTitle"] { font-size: @fs_heading; font-weight: 600; }
 QLabel[role="countChip"] { background: #fbd5d5; color: @error; border-radius: 8px;
-    padding: 1px 8px; font-size: 11px; font-weight: 600; }
-QLabel[role="empty"] { color: @muted; }
+    padding: 1px 8px; font-size: @fs_tiny; font-weight: 600; }
+QLabel[role="empty"] { color: @muted; font-size: @fs_small; }
+QLabel[role="emptyTitle"] { font-size: @fs_body; font-weight: 600; }
 QFrame[role="reminder"] { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
-QLabel[role="reminderTitle"] { font-size: 12px; font-weight: 700; }
-QLabel[role="reminderText"] { color: @muted; font-size: 12px; }
-QLabel[role="reminderTime"] { color: @muted; font-family: Consolas; font-size: 11px; }
+QLabel[role="reminderTitle"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="reminderText"] { color: @muted; font-size: @fs_small; }
+QLabel[role="reminderTime"] { color: @muted; font-family: @mono; font-size: @fs_mono; }
 QLabel[role="reminderTime"][today="true"] { color: @error; font-weight: 700; }
 QLabel[role="codeChip"] { background: @surface_container; color: @primary;
-    border-radius: 4px; padding: 0 5px; font-family: Consolas; font-size: 10px;
+    border-radius: 4px; padding: 0 5px; font-family: @mono; font-size: @fs_tiny;
     font-weight: 700; }
 QWidget#reminderList, QScrollArea { background: transparent; border: none; }
 """
 
 METRICS = (
     ("total_records", "Tổng hồ sơ", Icon.FOLDER, COLORS["text"]),
-    ("incomplete_records", "Chưa hoàn thành", Icon.HISTORY, COLORS["secondary"]),
+    ("incomplete_records", "Chưa hoàn thành", Icon.HISTORY, COLORS["pending_fg"]),
     ("completed_records", "Đã hoàn thành", Icon.ACCEPT, COLORS["done_fg"]),
     ("overdue_records", "Quá hạn", Icon.INFO, COLORS["error"]),
 )
+
+# Card colour by meaning: amber in progress, green done, red overdue.
+TONES = {
+    "incomplete_records": "pending",
+    "completed_records": "done",
+    "overdue_records": "alert",
+}
 
 
 def _set(widget, **properties):
@@ -92,6 +115,45 @@ def warning_text(item, as_of):
 def relative_day(moment, as_of):
     days = (moment.date() - as_of.date()).days
     return {0: "Hôm nay", 1: "Ngày mai"}.get(days, "")
+
+
+class EmptyState(QWidget):
+    """Centred icon + heading + muted line for a panel with nothing to list."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        box = QVBoxLayout(self)
+        box.setContentsMargins(24, 16, 24, 24)
+        box.setSpacing(6)
+        box.addStretch()
+        self.icon = QLabel(self)
+        self.icon.setFixedSize(44, 44)
+        self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title = QLabel(self)
+        self.title.setProperty("role", "emptyTitle")
+        self.message = QLabel(self)
+        self.message.setProperty("role", "empty")
+        self.message.setWordWrap(True)
+        for label in (self.title, self.message):
+            label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        box.addWidget(self.icon, 0, Qt.AlignmentFlag.AlignHCenter)
+        box.addSpacing(4)
+        box.addWidget(self.title)
+        box.addWidget(self.message)
+        box.addStretch()
+        self.hide()
+
+    def show_state(self, icon, colour, background, title, message):
+        self.icon.setPixmap(colored_icon(icon, colour).pixmap(QSize(20, 20)))
+        self.icon.setStyleSheet(f"background: {background}; border-radius: 22px;")
+        self.title.setText(title)
+        self.message.setText(message)
+        self.show()
+
+    def clear(self):
+        self.title.setText("")
+        self.message.setText("")
+        self.hide()
 
 
 class DashboardPage(QWidget):
@@ -147,22 +209,20 @@ class DashboardPage(QWidget):
         cards.setSpacing(12)
         self.metric_values, self.metric_notes, self.metric_chips = {}, {}, {}
         for key, label, icon, colour in METRICS:
-            alert = key == "overdue_records"
+            tone = TONES.get(key, "")
             card = QFrame(self)
             card.setProperty("role", "metric")
-            card.setProperty("alert", alert)
+            card.setProperty("tone", tone)
             box = QVBoxLayout(card)
             box.setContentsMargins(14, 12, 14, 12)
             box.setSpacing(4)
             top = QHBoxLayout()
             caption = QLabel(label, card)
             caption.setProperty("role", "metricTitle")
-            if alert:
-                caption.setStyleSheet(f"color: {COLORS['error']};")
+            caption.setProperty("tone", tone)
             tile = icon_label(icon, 16, card, colour)
             tile.setProperty("role", "iconTile")
-            tile.setProperty("alert", alert)
-            tile.setProperty("done", key == "completed_records")
+            tile.setProperty("tone", tone)
             tile.setFixedSize(28, 28)
             tile.setAlignment(Qt.AlignmentFlag.AlignCenter)
             top.addWidget(caption, 0, Qt.AlignmentFlag.AlignTop)
@@ -175,10 +235,11 @@ class DashboardPage(QWidget):
             foot.setSpacing(8)
             chip = QLabel(card)
             chip.setProperty("role", "chip")
-            chip.setProperty("alert", alert)
+            chip.setProperty("tone", tone)
             chip.hide()
             note = QLabel(card)
             note.setProperty("role", "metricNote")
+            note.setProperty("tone", tone)
             foot.addWidget(chip)
             foot.addWidget(note)
             foot.addStretch()
@@ -213,10 +274,9 @@ class DashboardPage(QWidget):
         head.addStretch()
         head.addWidget(self.records_button)
         attention_box.addLayout(head)
-        self.attention_message = QLabel(attention)
-        self.attention_message.setProperty("role", "empty")
-        self.attention_message.setWordWrap(True)
-        attention_box.addWidget(self.attention_message)
+        self.attention_empty = EmptyState(attention)
+        self.attention_message = self.attention_empty.message
+        attention_box.addWidget(self.attention_empty, 1)
         self.attention_table = self._attention_table(attention)
         attention_box.addWidget(self.attention_table, 1)
         panels.addWidget(attention, 1)
@@ -237,11 +297,11 @@ class DashboardPage(QWidget):
         head.addStretch()
         head.addWidget(self.reminders_button)
         upcoming_box.addLayout(head)
-        self.upcoming_message = QLabel(upcoming)
-        self.upcoming_message.setProperty("role", "empty")
-        self.upcoming_message.setWordWrap(True)
-        upcoming_box.addWidget(self.upcoming_message)
+        self.upcoming_empty = EmptyState(upcoming)
+        self.upcoming_message = self.upcoming_empty.message
+        upcoming_box.addWidget(self.upcoming_empty, 1)
         scroll = ScrollArea(upcoming)
+        self.upcoming_scroll = scroll
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         holder = QWidget()
@@ -281,7 +341,7 @@ class DashboardPage(QWidget):
         header.setDefaultAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
-        for column, width in enumerate((112, 0, 0, 148, 146, 84)):
+        for column, width in enumerate((112, 0, 0, 164, 146, 84)):
             if width:
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, width)
@@ -289,7 +349,7 @@ class DashboardPage(QWidget):
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Stretch)
         sheet = qss(
             "QHeaderView::section { background-color: @surface_low; color: @muted;"
-            ' font: 600 11px "Segoe UI"; border: none;'
+            " font-family: @font; font-size: @fs_tiny; font-weight: 600; border: none;"
             " border-bottom: 1px solid @outline_soft; padding-left: 19px; }"
         )
         setCustomStyleSheet(table, sheet, sheet)
@@ -311,10 +371,10 @@ class DashboardPage(QWidget):
             self.metric_notes[key].setText("")
             self.metric_chips[key].hide()
         self.attention_table.setRowCount(0)
-        self.attention_message.setText("")
+        self.attention_empty.clear()
         self.attention_count.hide()
         self._clear_upcoming()
-        self.upcoming_message.setText("")
+        self.upcoming_empty.clear()
         self.runner.submit(self.service.load, self._render, self._failed)
 
     def _clear_upcoming(self):
@@ -355,10 +415,16 @@ class DashboardPage(QWidget):
         items = snapshot.attention
         self.attention_count.setText(f"{snapshot.attention_total} hồ sơ")
         self.attention_count.setVisible(snapshot.attention_total > 0)
-        self.attention_message.setText(
-            "" if items else "Không có hồ sơ quá hạn hoặc đến hạn trong 24 giờ tới."
-        )
-        self.attention_message.setVisible(not items)
+        if items:
+            self.attention_empty.clear()
+        else:
+            self.attention_empty.show_state(
+                Icon.ACCEPT,
+                COLORS["done_fg"],
+                COLORS["done_bg"],
+                "Không có hồ sơ cần chú ý",
+                "Không có hồ sơ quá hạn hoặc đến hạn trong 24 giờ tới.",
+            )
         table = self.attention_table
         table.setVisible(bool(items))
         table.setRowCount(len(items))
@@ -383,6 +449,10 @@ class DashboardPage(QWidget):
                 )
             ):
                 cell.setToolTip(cell.text())
+                if column == 0:
+                    cell.setFont(mono_font(weight=QFont.Weight.Bold))
+                elif column == 3:
+                    cell.setFont(mono_font())
                 if column == 3 and overdue:
                     cell.setForeground(QColor(COLORS["error"]))
                 table.setItem(row, column, cell)
@@ -391,7 +461,7 @@ class DashboardPage(QWidget):
             styled(
                 badge,
                 "QLabel { background: %s; color: %s; border-radius: 4px;"
-                " padding: 2px 8px; font-size: 11px; font-weight: 600; }"
+                " padding: 2px 8px; font-size: @fs_tiny; font-weight: 600; }"
                 % (
                     ("#fbd5d5", "@error")
                     if overdue
@@ -417,10 +487,17 @@ class DashboardPage(QWidget):
 
     def _render_upcoming(self, snapshot, as_of):
         self._clear_upcoming()
-        self.upcoming_message.setText(
-            "" if snapshot.upcoming else "Không có lịch nhắc sắp tới."
-        )
-        self.upcoming_message.setVisible(not snapshot.upcoming)
+        self.upcoming_scroll.setVisible(bool(snapshot.upcoming))
+        if snapshot.upcoming:
+            self.upcoming_empty.clear()
+        else:
+            self.upcoming_empty.show_state(
+                Icon.RINGER,
+                COLORS["primary"],
+                COLORS["surface_container"],
+                "Không có lịch nhắc sắp tới",
+                "Tạo lịch ở trang Nhắc nhở để nhận thông báo trước hạn.",
+            )
         for index, reminder in enumerate(snapshot.upcoming):
             card = QFrame()
             card.setProperty("role", "reminder")
@@ -470,7 +547,13 @@ class DashboardPage(QWidget):
             "Không tải được tổng quan. Chọn Tải lại để thử lại; bạn vẫn có thể mở Hồ sơ hoặc Nhắc nhở."
         )
         self.feedback.show()
-        self.upcoming_message.setText("Dữ liệu chưa tải được.")
-        self.upcoming_message.show()
-        self.attention_message.setText("Dữ liệu chưa tải được.")
-        self.attention_message.show()
+        self.attention_table.hide()
+        self.upcoming_scroll.hide()
+        for empty in (self.attention_empty, self.upcoming_empty):
+            empty.show_state(
+                Icon.INFO,
+                COLORS["error"],
+                "#fee2e2",
+                "Chưa tải được dữ liệu",
+                "Dữ liệu chưa tải được. Chọn Tải lại để thử lại.",
+            )

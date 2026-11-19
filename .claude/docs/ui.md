@@ -23,7 +23,16 @@ người dùng nghiệm thu trên Windows.
   Token màu: `COLORS` trong `presentation/theme.py`.
 - `presentation/theme.py` ép nền trắng/chữ tối cho widget thường; widget có thiết kế riêng dùng
   `styled()` hoặc thuộc tính `xdsStyled` để giữ style của mình.
-- Font Segoe UI; mã hồ sơ dùng Consolas đậm.
+- **Chữ:** một nơi khai báo trong `presentation/theme.py` — `FONT_FAMILIES` (Segoe UI),
+  `MONO_FAMILIES` (Consolas) và thang cỡ `TYPE`; QSS dùng token `@font`, `@mono`, `@fs_*`, code
+  Python dùng `ui_font()` / `mono_font()` / `set_mono()`. Không ghi cứng tên font hay `px`.
+  Thang cỡ: tiêu đề trang 22/700 · tiêu đề hộp thoại, khung, mục 16/600 · số thống kê 24/700 ·
+  nội dung, nút, ô nhập, bảng 13 · chữ phụ 12 · chip, badge, nhãn in hoa 11 · mã/ngày giờ 12.
+  Consolas cho mã hồ sơ ở mọi nơi và ngày giờ trong bảng/lịch nhắc (khung chi tiết hồ sơ và ô
+  nhập giữ Segoe UI vì hẹp).
+- **Logo:** `presentation/logo.svg` (người dùng cung cấp, tô navy `#1d2b3e`) cho thanh tiêu đề (18px trước tên app), cửa sổ, thanh tác vụ
+  (AppUserModelID `xaydungso` gán riêng cho cửa sổ trong `presentation/taskbar.py`, vì Python bản Store bỏ qua ID của tiến trình; logo có nền trắng dưới phần rỗng để nổi trên thanh tác vụ tối) và Alt+Tab; file `.exe` dùng `packaging/xaydungso.ico`, tạo lại bằng
+  `uv run python packaging/make_icon.py` sau khi đổi logo.
 - **Icon:** Fluent UI System Icons của Microsoft (20px regular, MIT) trong `presentation/icons/`
   kèm `LICENSE`, dùng qua `presentation/icons.py` (`Icon.X`); tô màu bằng `colored_icon()`.
   Không dùng `FluentIcon` của qfluentwidgets.
@@ -45,7 +54,7 @@ người dùng nghiệm thu trên Windows.
 
 ## Tổng quan
 
-Xem [Dashboard](../modules/dashboard/overview.md): 4 thẻ, bảng Hồ sơ cần chú ý, thẻ lịch sắp tới.
+Xem [Dashboard](dashboard.md#tổng-quan-dashboard): 4 thẻ, bảng Hồ sơ cần chú ý, thẻ lịch sắp tới.
 
 ## Quản lý hồ sơ (`presentation/pages.py`, `record_widgets.py`)
 
@@ -63,7 +72,7 @@ Xem [Dashboard](../modules/dashboard/overview.md): 4 thẻ, bảng Hồ sơ cầ
 - Hộp thoại **Thêm hồ sơ mới / Sửa hồ sơ** (`record_dialog.py`): 1. Thông tin người nộp & địa
   điểm; 2. Quy trình & thời gian xử lý (định dạng `dd/MM/yyyy HH:mm`); 3. Tình trạng thẩm định &
   kết quả (thẻ chọn trạng thái, đóng dấu Bản vẽ kỹ thuật / Giấy phép XD, giao nhận, người ký
-  nhận, chữ ký) và Ghi chú. Quy tắc nhập: [CPXD](../modules/cpxd/overview.md).
+  nhận, chữ ký) và Ghi chú. Quy tắc nhập: [CPXD](records.md#hồ-sơ-xây-dựng-cpxd--quy-tắc-và-workflow).
 
 ## Nhắc nhở (`presentation/reminders_page.py`)
 
@@ -80,9 +89,9 @@ Xem [Dashboard](../modules/dashboard/overview.md): 4 thẻ, bảng Hồ sơ cầ
   riêng trên thanh điều hướng): danh sách mẫu + tìm kiếm; trình sửa (tên, nội dung, gạch đầu
   dòng, đường kẻ, emoji, chèn biến), đặt mặc định, xem trước Telegram/Windows Toast với dữ liệu
   minh họa; Xóa mẫu / Hủy thay đổi / Lưu mẫu; hỏi trước khi bỏ thay đổi chưa lưu.
-- Quy tắc: [Nhắc nhở](../modules/reminders/business-rules.md).
+- Quy tắc: [Nhắc nhở](reminders.md#nhắc-nhở--quy-tắc-nghiệp-vụ).
 
 ## Cài đặt (`presentation/settings.py`)
 
 Cột trái chọn **Dữ liệu (SQLite)**, **Telegram Bot**, **Sổ theo dõi Excel**; nội dung từng mục
-trong [Cài đặt](../modules/settings/overview.md). Hộp chọn file dùng Qt dialog trong ứng dụng.
+trong [Cài đặt](settings.md). Hộp chọn file dùng Qt dialog trong ứng dụng.

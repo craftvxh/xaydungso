@@ -4,7 +4,6 @@ import base64
 import ctypes
 import json
 import os
-import sys
 import tempfile
 from pathlib import Path
 
@@ -12,8 +11,6 @@ from xaydungso.application.settings import Preferences
 
 
 def protect_token(value: bytes, *, decrypt=False) -> bytes:
-    if sys.platform != "win32":
-        raise RuntimeError("Lưu Bot Token chỉ được hỗ trợ trên Windows.")
     from ctypes import wintypes
 
     class Blob(ctypes.Structure):

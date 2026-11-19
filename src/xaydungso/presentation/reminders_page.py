@@ -41,7 +41,13 @@ from xaydungso.presentation.record_widgets import (
     icon_label,
 )
 from xaydungso.presentation.reminder_dialog import ReminderDialog
-from xaydungso.presentation.theme import COLORS, accent_button, qss, styled
+from xaydungso.presentation.theme import (
+    COLORS,
+    accent_button,
+    qss,
+    set_mono,
+    styled,
+)
 
 # Overall status of one reminder, derived from its two delivery channels.
 PENDING, SENT, FAILED, CANCELLED = "Chờ gửi", "Đã gửi", "Gửi lỗi", "Đã hủy"
@@ -67,28 +73,30 @@ STATE_COLOURS = {
 
 SHEET = """
 QWidget#reminders { background: @page; }
-QLabel { background: transparent; color: @text; font-size: 12px; }
-QLabel#remTitle { font-size: 22px; font-weight: 700; }
-QLabel#remSubtitle, QLabel#remHelp { color: @muted; font-size: 12px; }
-QLabel#workerChip { border-radius: 8px; padding: 3px 10px; font-size: 11px;
+QLabel { background: transparent; color: @text; font-size: @fs_body; }
+QLabel#remTitle { font-size: @fs_page; font-weight: 700; }
+QLabel#remSubtitle, QLabel#remHelp { color: @muted; font-size: @fs_small; }
+QLabel#workerChip { border-radius: 8px; padding: 3px 10px; font-size: @fs_tiny;
     font-weight: 600; background: #eceef3; color: #5b616e; }
 QLabel#workerChip[running="true"] { background: #dcfce7; color: #15803d; }
 QFrame[role="stat"], QFrame#remToolbar, QFrame#remCard { background: @surface;
     border: 1px solid @outline_soft; border-radius: 8px; }
-QLabel[role="statTitle"] { color: @muted; font-size: 12px; }
-QLabel[role="statValue"] { font-size: 24px; font-weight: 700; }
+QLabel[role="statTitle"] { color: @muted; font-size: @fs_small; }
+QLabel[role="statValue"] { font-size: @fs_stat; font-weight: 700; }
 QLabel[role="statIcon"] { border-radius: 20px; }
-QLabel#remCount { color: @muted; font-size: 12px; }
-QLabel[role="main"] { font-size: 12px; font-weight: 600; }
-QLabel[role="sub"] { color: @muted; font-size: 11px; }
+QLabel#remCount { color: @muted; font-size: @fs_small; }
+QLabel[role="main"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="sub"] { color: @muted; font-size: @fs_small; }
+QLabel[role="main"][mono="true"], QLabel[role="sub"][mono="true"] {
+    font-size: @fs_mono; }
 QFrame#remFooter { background: @surface_low; border: none;
     border-top: 1px solid @outline_soft; border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px; }
-QLabel#remFooterText { color: @muted; font-size: 12px; }
+QLabel#remFooterText { color: @muted; font-size: @fs_small; }
 QFrame#remBulk { background: @surface_container; border: none;
     border-bottom: 1px solid @outline_soft; border-top-left-radius: 8px;
     border-top-right-radius: 8px; }
-QLabel#remBulkText { font-size: 12px; font-weight: 600; }
+QLabel#remBulkText { font-size: @fs_body; font-weight: 600; }
 """
 
 
@@ -381,7 +389,7 @@ class RemindersPage(QWidget):
         sheet = qss(
             "QTableView { gridline-color: @outline_soft; }"
             " QHeaderView::section { background-color: @surface_low; color: @muted;"
-            ' font: 600 11px "Segoe UI"; border: none;'
+            " font-family: @font; font-size: @fs_tiny; font-weight: 600; border: none;"
             " border-right: 1px solid @outline_soft;"
             " border-bottom: 1px solid @outline_soft; padding-left: 12px; }"
         )
@@ -475,10 +483,9 @@ class RemindersPage(QWidget):
         table = self.reminders_table
         record = self.records.get(reminder.get("record_id"))
         code = QLabel(record.data.record_code if record else "—")
-        # Own sheet: parent sheets' font-family rules would override setFont().
         code.setStyleSheet(
-            f"color: {COLORS['primary']}; font-family: Consolas, 'Courier New';"
-            " font-size: 12px; font-weight: 700;"
+            qss("color: @primary; font-family: @mono; font-size: @fs_mono;")
+            + " font-weight: 700;"
         )
         who = (
             (record.data.applicant_name, record.data.address or "Chưa có địa chỉ")
@@ -511,7 +518,12 @@ class RemindersPage(QWidget):
                 self._lines(first_line(reminder["title"]), detail),
                 reminder["title"] + "\n\n" + detail,  # Full message on hover.
             ),
-            self._stack(self._lines(f"{notify:%d/%m/%Y}", f"{notify:%H:%M}")),
+            self._stack(
+                [
+                    set_mono(label)
+                    for label in self._lines(f"{notify:%d/%m/%Y}", f"{notify:%H:%M}")
+                ]
+            ),
             self._stack([self._badge(status)]),
             self._actions(reminder, status),
         )
@@ -548,7 +560,7 @@ class RemindersPage(QWidget):
         label = QLabel(status)
         label.setStyleSheet(
             f"background: {background}; color: {colour}; border-radius: 4px;"
-            " padding: 2px 8px; font-size: 11px; font-weight: 600;"
+            + qss(" padding: 2px 8px; font-size: @fs_tiny; font-weight: 600;")
         )
         return label
 

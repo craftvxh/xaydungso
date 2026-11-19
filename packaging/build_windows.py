@@ -1,15 +1,10 @@
 """Run on Windows: uv run python packaging/build_windows.py."""
 
 import subprocess
-import sys
 from pathlib import Path
 
 
 def main() -> None:
-    if sys.platform != "win32":
-        raise SystemExit(
-            "Windows packaging must run on Windows; cross-build is unsupported"
-        )
     root = Path(__file__).resolve().parents[1]
     subprocess.run(
         ["uv", "sync", "--locked", "--group", "packaging"], cwd=root, check=True
@@ -41,6 +36,10 @@ def main() -> None:
             "docs/modules/excel/templates/so_theo_doi.xlsx:templates",
             "--add-data",
             "src/xaydungso/presentation/icons:xaydungso/presentation/icons",
+            "--add-data",
+            "src/xaydungso/presentation/logo.svg:xaydungso/presentation",
+            "--icon",
+            str(root / "packaging" / "xaydungso.ico"),
             "--specpath",
             "build",
             "--distpath",

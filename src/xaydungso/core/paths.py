@@ -1,4 +1,4 @@
-"""Shared locations for GUI and GUI-independent reminder worker."""
+"""Shared locations for GUI and GUI-independent reminder worker (Windows)."""
 
 import os
 import sys
@@ -9,12 +9,7 @@ def data_directory() -> Path:
     override = os.environ.get("XAYDUNGSO_DATA_DIR")
     if override:
         return Path(override).expanduser()
-    if sys.platform == "win32":
-        return Path(os.environ["LOCALAPPDATA"]) / "xaydungso"
-    return (
-        Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
-        / "xaydungso"
-    )
+    return Path(os.environ["LOCALAPPDATA"]) / "xaydungso"
 
 
 def template_path() -> Path:

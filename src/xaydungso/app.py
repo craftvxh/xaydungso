@@ -4,6 +4,7 @@ import logging
 import sqlite3
 import sys
 
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from xaydungso.application.dashboard import Dashboard
@@ -21,10 +22,13 @@ from xaydungso.infrastructure.notifications import TelegramNotification
 from xaydungso.infrastructure.preferences import FilePreferences
 from xaydungso.infrastructure.records import SqliteRecords
 from xaydungso.infrastructure.reminders import SqliteReminders
+from xaydungso.infrastructure.startup import StartupShortcut
 from xaydungso.infrastructure.templates import SqliteTemplates
 from xaydungso.infrastructure.tracking_export import SqliteTrackingExporter
 from xaydungso.infrastructure.worker_process import BackgroundReminders
+from xaydungso.presentation.icons import LOGO
 from xaydungso.presentation.main_window import MainWindow
+from xaydungso.presentation.taskbar import set_taskbar_identity
 from xaydungso.presentation.theme import configure_theme
 
 logger = logging.getLogger(__name__)
@@ -45,6 +49,7 @@ def main() -> int:
     configure_theme(app)
     app.setApplicationName(settings.app_name)
     app.setApplicationDisplayName(settings.window_title)
+    app.setWindowIcon(QIcon(str(LOGO)))
 
     directory = data_directory()
     database = Database(directory / "xaydungso.sqlite3")
@@ -79,6 +84,13 @@ def main() -> int:
         ),
     )
     reminders = Reminders(SqliteReminders(database))
+    startup = StartupShortcut(directory)
+    try:
+        # First start only: run the reminder worker at Windows sign-in.
+        if startup.ensure_first_run():
+            logger.info("Reminder worker added to Windows startup")
+    except RuntimeError:
+        logger.warning("Could not add the reminder worker to Windows startup")
     window = MainWindow(
         settings,
         records,
@@ -89,7 +101,9 @@ def main() -> int:
         user_settings,
         Templates(SqliteTemplates(database)),
         SqliteDiagnostics(database),
+        startup,
     )
+    set_taskbar_identity(window)  # Taskbar shows the app logo, not Python's.
     window.show()
     logger.info("Application started")
     exit_code = app.exec()

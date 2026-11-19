@@ -120,7 +120,7 @@ def badge_qss(status):
     done = status is RecordStatus.COMPLETE
     return qss(
         "QLabel { background: %s; color: %s; border-radius: 4px;"
-        " padding: 2px 8px; font-size: 11px; font-weight: 500; }"
+        " padding: 2px 8px; font-size: @fs_tiny; font-weight: 500; }"
         % (("@done_bg", "@done_fg") if done else ("@pending_bg", "@pending_fg"))
     )
 
@@ -154,12 +154,12 @@ class StatusFilter(QFrame):
                 border-radius: 6px; }
             QPushButton:hover { background: @surface_container; }
             QPushButton:checked { background: @surface; border-color: @outline; }
-            QLabel { background: transparent; color: @muted; font-size: 12px; }
+            QLabel { background: transparent; color: @muted; font-size: @fs_small; }
             QLabel[checked="true"] { color: @text; font-weight: 600; }
-            QLabel[role="mark"] { color: @secondary; font-size: 9px; }
-            QLabel[role="mark"][done="true"] { color: @primary; font-size: 12px; }
+            QLabel[role="mark"] { color: @secondary; font-size: @fs_tiny; }
+            QLabel[role="mark"][done="true"] { color: @primary; font-size: @fs_small; }
             QLabel[role="count"] { background: @surface_container; border-radius: 8px;
-                padding: 0 6px; font-size: 11px; }
+                padding: 0 6px; font-size: @fs_tiny; }
             QLabel[role="count"][checked="true"] { background: @secondary_container;
                 color: @text; }
             """,
@@ -241,8 +241,8 @@ class Pager(QWidget):
         styled(
             self,
             """
-            QLabel { background: transparent; color: @muted; font-size: 11px; }
-            QPushButton { background: @surface; color: @text; font-size: 11px;
+            QLabel { background: transparent; color: @muted; font-size: @fs_tiny; }
+            QPushButton { background: @surface; color: @text; font-size: @fs_tiny;
                 border: 1px solid @outline_soft; border-radius: 4px; }
             QPushButton:hover { background: @surface_container; }
             QPushButton:checked { background: @primary; color: @on_primary;
@@ -308,19 +308,19 @@ class RecordDetail(QFrame):
             """
             QFrame#recordDetail { background: @surface; border: 1px solid @outline;
                 border-radius: 8px; }
-            QLabel { background: transparent; color: @text; font-size: 12px; }
-            QLabel[role="title"] { font-size: 14px; font-weight: 600; }
+            QLabel { background: transparent; color: @text; font-size: @fs_small; }
+            QLabel[role="title"] { font-size: @fs_heading; font-weight: 600; }
             QLabel[role="code"] { background: @primary_container; color: @on_primary;
-                border-radius: 4px; padding: 1px 6px; font-family: Consolas;
-                font-weight: 700; font-size: 11px; }
-            QLabel[role="group"] { color: @muted; font-size: 10px; font-weight: 700; }
-            QLabel[role="key"] { color: @muted; font-size: 11px; }
-            QLabel[role="value"] { font-weight: 600; font-size: 11px; }
+                border-radius: 4px; padding: 1px 6px; font-family: @mono;
+                font-weight: 700; font-size: @fs_tiny; }
+            QLabel[role="group"] { color: @muted; font-size: @fs_tiny; font-weight: 700; }
+            QLabel[role="key"] { color: @muted; font-size: @fs_small; }
+            QLabel[role="value"] { font-weight: 600; font-size: @fs_small; }
             QLabel[role="hint"] { background: @surface_container; color: @primary;
-                border-radius: 4px; padding: 0 6px; font-size: 10px; font-weight: 500; }
+                border-radius: 4px; padding: 0 6px; font-size: @fs_tiny; font-weight: 500; }
             QLabel[role="hint"][overdue="true"] { background: #fee2e2; color: @error; }
             QLabel[role="notes"] { background: @surface_low; border: 1px solid @outline;
-                border-radius: 4px; padding: 8px; font-size: 11px; }
+                border-radius: 4px; padding: 8px; font-size: @fs_small; }
             QLabel[role="empty"] { color: @muted; }
             QFrame[role="card"] { background: @surface_faint; border: 1px solid @outline_soft;
                 border-radius: 8px; }

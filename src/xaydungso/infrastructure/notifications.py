@@ -4,7 +4,6 @@ import base64
 import json
 import os
 import subprocess
-import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree
@@ -155,8 +154,6 @@ try {
 
 class WindowsNotification:
     def send(self, title: str, message: str) -> None:
-        if sys.platform != "win32":
-            raise RuntimeError("Windows Notification chỉ có trên Windows.")
         encoded = base64.b64encode(
             windows_script(title, message).encode("utf-16-le")
         ).decode("ascii")

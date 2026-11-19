@@ -32,8 +32,8 @@ Sau khi cập nhật code: đóng và mở lại phần mềm; nếu nhắc nề
 
 ## Dữ liệu
 
-- Thư mục dữ liệu: `%LOCALAPPDATA%\xaydungso` (Windows), `$XDG_DATA_HOME/xaydungso` hoặc
-  `~/.local/share/xaydungso` (Linux); đặt `XAYDUNGSO_DATA_DIR` để dùng thư mục khác.
+- Thư mục dữ liệu: `%LOCALAPPDATA%\xaydungso`; đặt `XAYDUNGSO_DATA_DIR` để dùng thư mục khác.
+  Ứng dụng chỉ hỗ trợ Windows (10/11).
 - Gồm `xaydungso.sqlite3` (nguồn dữ liệu chính), `settings.json`, `reminders.log`, `launcher.log`.
 - Database tự nâng cấp schema khi mở (hiện v7), không xóa dữ liệu cũ. Không có sao lưu/khôi phục
   trong ứng dụng, không nhập dữ liệu từ Excel.
@@ -41,7 +41,7 @@ Sau khi cập nhật code: đóng và mở lại phần mềm; nếu nhắc nề
 ## Phát triển
 
 Python 3.12 · PyQt6 · PyQt6-Fluent-Widgets · SQLite · uv · pytest · Ruff. Kiến trúc Modular
-Monolith phân lớp ([Kiến trúc](docs/architecture/overview.md)).
+Monolith phân lớp ([Kiến trúc](.claude/docs/architecture.md)).
 
 ```bash
 uv sync --locked
@@ -53,13 +53,14 @@ uv run ruff format --check .
 ```
 
 Đóng gói Windows: `uv run python packaging/build_windows.py` (PyInstaller; chưa nghiệm thu bản
-`.exe`, chưa có installer hay tự chạy khi đăng nhập).
+`.exe`, chưa có installer). Nhắc nền tự chạy ẩn khi đăng nhập Windows (lối tắt trong Startup, tạo ở
+lần mở app đầu tiên; tắt ở Cài đặt → Telegram Bot hoặc Task Manager → Startup apps).
 
 ## Tài liệu
 
-- [Mục lục tài liệu](docs/README.md) — đặc tả từng module, giao diện, kiến trúc, kiểm thử
-- [Vận hành nhắc nhở và khắc phục Telegram](docs/modules/reminders/operations.md)
-- [Lộ trình](docs/roadmap/overview.md) · [Nhật ký bàn giao](process.md) · [Quy tắc agent](AGENTS.md)
+- [Mục lục tài liệu](.claude/docs/README.md) — đặc tả từng module, giao diện, kiến trúc, kiểm thử
+- [Vận hành nhắc nhở và khắc phục Telegram](.claude/docs/reminders.md#nhắc-nhở--vận-hành-và-khắc-phục-sự-cố)
+- [Lộ trình](.claude/docs/README.md#lộ-trình) · [Nhật ký bàn giao](.claude/process.md) · [Quy tắc Claude Code](.claude/CLAUDE.md)
 
 Icon: [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) của Microsoft
 (giấy phép MIT, xem `src/xaydungso/presentation/icons/LICENSE`).

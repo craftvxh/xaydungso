@@ -1,11 +1,11 @@
 """Fluent navigation into the record and reminder use cases."""
 
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QIcon
 from qfluentwidgets import FluentWindow, NavigationItemPosition
 
 from xaydungso.core.config import AppSettings
 from xaydungso.presentation.dashboard import DashboardPage
-from xaydungso.presentation.icons import Icon
+from xaydungso.presentation.icons import LOGO, Icon
 from xaydungso.presentation.pages import RecordsPage, RemindersPage
 from xaydungso.presentation.settings import SettingsPage
 from xaydungso.presentation.shell import nav_badge, set_badge, style_shell
@@ -28,12 +28,13 @@ class MainWindow(FluentWindow):
         user_settings=None,
         templates=None,
         diagnostics=None,
+        startup=None,
     ):
         super().__init__()
         self.setMicaEffectEnabled(False)
         self.setCustomBackgroundColor("#ffffff", "#ffffff")
         self.setWindowTitle(settings.window_title)
-        self.setWindowIcon(Icon.LAYOUT.icon())
+        self.setWindowIcon(QIcon(str(LOGO)))
         style_shell(self, settings.window_title)
         self.resize(settings.window_width, settings.window_height)
         # Keep the navigation panel expanded by default; the menu button still collapses it.
@@ -57,6 +58,7 @@ class MainWindow(FluentWindow):
                 self,
                 diagnostics=diagnostics,
                 export=records.export,
+                startup=startup,
             )
             self.addSubInterface(
                 self.settings_page,

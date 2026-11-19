@@ -9,7 +9,7 @@ from qfluentwidgets import (
     setCustomStyleSheet,
 )
 
-from xaydungso.presentation.theme import COLORS
+from xaydungso.presentation.theme import COLORS, qss
 
 SUBTITLE = "Giải pháp chuyển đổi số"
 
@@ -35,10 +35,13 @@ def style_shell(window, name: str):
     _tint(title_bar, "xdsTitleBar")
     title_bar.titleLabel.setText(f"{name} - {SUBTITLE}")
     title_bar.titleLabel.setStyleSheet(
-        f"QLabel {{ background: transparent; color: {COLORS['text']};"
-        ' font: 600 12px "Segoe UI"; padding: 0 0 0 4px; }'
+        qss(
+            "QLabel { background: transparent; color: @text; font-family: @font;"
+            " font-size: @fs_small; font-weight: 600; padding: 0 0 0 4px; }"
+        )
     )
-    title_bar.iconLabel.hide()
+    # App logo before the title (set from the window icon by Fluent).
+    title_bar.iconLabel.setPixmap(window.windowIcon().pixmap(18, 18))
     for button in (title_bar.minBtn, title_bar.maxBtn, title_bar.closeBtn):
         button.setNormalColor(QColor(COLORS["muted"]))
         button.setHoverColor(QColor(COLORS["text"]))
