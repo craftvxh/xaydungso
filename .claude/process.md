@@ -360,5 +360,6 @@ uv run python packaging/build_windows.py
 | 19/11/2026 | Sửa lỗi launcher báo `-1073741819` (0xC0000005 trong Qt6Widgets) sau khi Thoát từ khay: app thoát mã 0 nhưng cửa sổ (tray/server giữ tham chiếu) bị hủy lúc tắt Python, sau QApplication. Nay `app.py` đóng server và `sip.delete(window)` trước khi trả về. Event log xác nhận lỗi cũ; 3 lần thoát qua menu khay sau khi sửa không còn crash |
 | 19/11/2026 | Menu khay chỉ chữ: **Mở**, **Thoát**. Cửa sổ mở giữa màn hình (`MainWindow.center_on_screen`, màn hình có chuột, vùng làm việc); đo thật 1280×800 tại (320,120) trên màn hình 1920×1032 |
 | 19/11/2026 | Bỏ thông báo "Xây Dựng Số vẫn đang chạy" khi bấm X ẩn xuống khay (người dùng yêu cầu) |
+| 19/11/2026 | Bộ cài `dist/xaydungso_setup.exe` (28 MB) từ `packaging/xaydungso.iss` bằng Inno Setup 7.1.1: cài theo người dùng, lối tắt Start Menu, tự tắt bản đang chạy (`PrepareToInstall` + taskkill, vì X chỉ ẩn xuống khay), gỡ cài đặt xóa lối tắt Startup và giữ dữ liệu. Đã thử thật: cài im lặng vào thư mục tạm, mở app, gỡ cài đặt (tắt app, xóa file/lối tắt/mục Apps), không crash. Chưa thử cài bằng giao diện và đăng nhập lại Windows với bản cài |
 
 Cập nhật file này sau mỗi phiên, phân biệt code đã có, kiểm tra đã chạy và phần chưa nghiệm thu.

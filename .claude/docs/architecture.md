@@ -38,7 +38,8 @@ dependencies. Không ép mapping một-một giữa `docs/modules/` và Python p
 
 Python 3.12, Astral uv (`uv.lock`), PyQt6 + PyQt6-Fluent-Widgets, SQLite (thư viện chuẩn),
 pytest, Ruff. Icon: Fluent UI System Icons (MIT, đi kèm repository). Đóng gói: PyInstaller
-(`packaging/build_windows.py`, chưa nghiệm thu).
+(`packaging/build_windows.py`) + bộ cài Inno Setup 7 (`packaging/xaydungso.iss` →
+`dist/xaydungso_setup.exe`, cài theo người dùng, không ký số vì chỉ dùng nội bộ).
 
 ### Thay đổi kiến trúc
 
