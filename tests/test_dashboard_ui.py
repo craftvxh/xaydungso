@@ -59,7 +59,7 @@ def test_dashboard_loading_error_recovery_and_navigation():
         page.refresh_button.click()
         idle()
         assert all(label.text() == '0' for label in page.metric_values.values())
-        assert 'Không có lịch' in page.upcoming_message.text()
+        assert 'Không có lịch' in page.upcoming_empty.title.text()
         assert 'Không tải được' not in page.feedback.text()
 
         service.fail = True

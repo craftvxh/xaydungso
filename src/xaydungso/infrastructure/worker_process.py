@@ -1,5 +1,6 @@
 """One reminder worker per data directory, using an OS-released process lock."""
 
+import msvcrt
 import os
 import subprocess
 import sys
@@ -14,26 +15,15 @@ def worker_lock(directory: Path):
     stream = (directory / "reminder-worker.lock").open("a+b")
     locked = False
     try:
-        if sys.platform == "win32":
-            import msvcrt
-
-            if stream.seek(0, 2) == 0:
-                stream.write(b"0")
-                stream.flush()
-            stream.seek(0)
-            try:
-                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
-                locked = True
-            except OSError:
-                pass
-        else:
-            import fcntl
-
-            try:
-                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                locked = True
-            except BlockingIOError:
-                pass
+        if stream.seek(0, 2) == 0:
+            stream.write(b"0")
+            stream.flush()
+        stream.seek(0)
+        try:
+            msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            locked = True
+        except OSError:
+            pass
         yield locked
     finally:
         stream.close()
@@ -45,40 +35,34 @@ def is_running(directory: Path) -> bool:
 
 
 def _windowless_python() -> str:
-    """pythonw.exe next to the running interpreter on Windows, if present."""
-    if sys.platform == "win32":
-        candidate = Path(sys.executable).with_name("pythonw.exe")
-        if candidate.is_file():
-            return str(candidate)
-    return sys.executable
+    """pythonw.exe next to the running interpreter, if present."""
+    candidate = Path(sys.executable).with_name("pythonw.exe")
+    return str(candidate) if candidate.is_file() else sys.executable
+
+
+def worker_command(directory: Path) -> list[str]:
+    """Windowless command line that runs the reminder worker for ``directory``."""
+    if getattr(sys, "frozen", False):
+        command = [sys.executable, "--reminder-worker"]
+    else:
+        command = [_windowless_python(), "-m", "xaydungso.worker"]
+    return [*command, "--data-dir", str(directory.resolve())]
 
 
 def start_worker(directory: Path) -> None:
     if is_running(directory):
         return
     (directory / "reminder-worker.stop").unlink(missing_ok=True)
-    if getattr(sys, "frozen", False):
-        command = [sys.executable, "--reminder-worker"]
-    else:
-        command = [_windowless_python(), "-m", "xaydungso.worker"]
-    options = (
-        {"start_new_session": True}
-        if sys.platform != "win32"
-        else {
-            # CREATE_NO_WINDOW, not DETACHED_PROCESS: a detached console program
-            # (e.g. the venv python.exe launcher's child) opens a new visible
-            # terminal; with no window it gets a hidden console instead.
-            "creationflags": subprocess.CREATE_NO_WINDOW
-            | subprocess.CREATE_NEW_PROCESS_GROUP
-        }
-    )
     process = subprocess.Popen(
-        [*command, "--data-dir", str(directory.resolve())],
+        worker_command(directory),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         env=os.environ.copy(),
-        **options,
+        # CREATE_NO_WINDOW, not DETACHED_PROCESS: a detached console program
+        # (e.g. the venv python.exe launcher's child) opens a new visible
+        # terminal; with no window it gets a hidden console instead.
+        creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
     )
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:

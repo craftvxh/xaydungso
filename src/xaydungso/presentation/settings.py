@@ -25,6 +25,7 @@ from qfluentwidgets import (
     PasswordLineEdit,
     PrimaryPushButton,
     PushButton,
+    SwitchButton,
 )
 
 from xaydungso.application.ports import NotificationError
@@ -36,35 +37,35 @@ from xaydungso.presentation.theme import COLORS, accent_button, styled
 
 SHEET = """
 QWidget#settings { background: @page; }
-QLabel { background: transparent; color: @text; font-size: 12px; }
-QLabel#setTitle { font-size: 20px; font-weight: 700; }
-QLabel#crumb { color: @muted; font-size: 13px; }
+QLabel { background: transparent; color: @text; font-size: @fs_body; }
+QLabel#setTitle { font-size: @fs_page; font-weight: 700; }
+QLabel#crumb { color: @muted; font-size: @fs_body; }
 QFrame#subNav, QFrame[role="panel"] { background: @surface;
     border: 1px solid @outline_soft; border-radius: 10px; }
-QLabel[role="overline"] { color: @muted; font-size: 10px; font-weight: 700; }
+QLabel[role="overline"] { color: @muted; font-size: @fs_tiny; font-weight: 700; }
 QPushButton[role="navItem"] { background: transparent; border: none;
     border-radius: 6px; text-align: left; }
 QPushButton[role="navItem"]:hover { background: @surface_low; }
 QPushButton[role="navItem"]:checked { background: @surface_container; }
-QLabel[role="navTitle"] { font-size: 13px; font-weight: 600; }
-QLabel[role="navHint"] { color: @muted; font-size: 11px; }
-QLabel[role="sectionTitle"] { font-size: 18px; font-weight: 700; }
-QLabel[role="muted"] { color: @muted; font-size: 12px; }
-QLabel[role="small"] { color: @muted; font-size: 11px; }
-QLabel[role="field"] { font-size: 12px; font-weight: 600; }
-QLabel[role="chip"] { border-radius: 8px; padding: 2px 10px; font-size: 11px;
+QLabel[role="navTitle"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="navHint"] { color: @muted; font-size: @fs_small; }
+QLabel[role="sectionTitle"] { font-size: @fs_heading; font-weight: 600; }
+QLabel[role="muted"] { color: @muted; font-size: @fs_small; }
+QLabel[role="small"] { color: @muted; font-size: @fs_small; }
+QLabel[role="field"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="chip"] { border-radius: 8px; padding: 2px 10px; font-size: @fs_tiny;
     font-weight: 600; background: @surface_container; color: @muted; }
 QLabel[role="chip"][tone="ok"] { background: #dcfce7; color: #15803d; }
 QLabel[role="chip"][tone="bad"] { background: #fee2e2; color: #b91c1c; }
 QLabel[role="chip"][tone="busy"] { background: #dbeafe; color: #1d4ed8; }
 QFrame[role="tile"] { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
-QLabel[role="tileLabel"] { color: @muted; font-size: 11px; }
-QLabel[role="tileValue"] { font-size: 16px; font-weight: 700; }
-QLabel[role="tileUnit"] { color: @muted; font-size: 11px; }
+QLabel[role="tileLabel"] { color: @muted; font-size: @fs_small; }
+QLabel[role="tileValue"] { font-size: @fs_heading; font-weight: 700; }
+QLabel[role="tileUnit"] { color: @muted; font-size: @fs_small; }
 QFrame[role="info"] { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
-QLabel#settingsFeedback { color: @text; font-size: 12px; }
+QLabel#settingsFeedback { color: @text; font-size: @fs_body; }
 """
 
 
@@ -83,7 +84,14 @@ class SettingsPage(QWidget):
     )
 
     def __init__(
-        self, service, runner, output_path, parent=None, diagnostics=None, export=None
+        self,
+        service,
+        runner,
+        output_path,
+        parent=None,
+        diagnostics=None,
+        export=None,
+        startup=None,
     ):
         super().__init__(parent)
         self.setObjectName("settings")
@@ -92,6 +100,7 @@ class SettingsPage(QWidget):
         self.service, self.runner = service, runner
         self.output_path = output_path
         self.diagnostics, self.export = diagnostics, export
+        self.startup = startup
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(12)
@@ -336,6 +345,8 @@ class SettingsPage(QWidget):
         hint.setProperty("role", "small")
         hint.setWordWrap(True)
         box.addWidget(hint)
+        if self.startup is not None:
+            box.addWidget(self._startup_row(panel))
         box.addWidget(
             self._info(
                 "Kiểm tra kết nối không gửi tin; Gửi thử gửi một tin. Cả hai dùng ô đang "
@@ -360,6 +371,53 @@ class SettingsPage(QWidget):
         box.addLayout(actions)
         _chip(self.telegram_chip, "Chưa kiểm tra")
         return panel
+
+    def _startup_row(self, parent):
+        frame = QFrame(parent)
+        frame.setProperty("role", "info")
+        row = QHBoxLayout(frame)
+        row.setContentsMargins(12, 8, 12, 8)
+        row.setSpacing(10)
+        text = QVBoxLayout()
+        text.setSpacing(2)
+        title = QLabel("Khởi động nhắc nền cùng Windows", frame)
+        title.setProperty("role", "field")
+        hint = QLabel(
+            "Khi đăng nhập Windows, nhắc nền tự chạy ẩn để gửi lịch nhắc dù chưa mở "
+            "phần mềm. Áp dụng ngay, không cần nhấn Lưu; cũng tắt được ở Task Manager "
+            "→ Startup apps.",
+            frame,
+        )
+        hint.setProperty("role", "small")
+        hint.setWordWrap(True)
+        text.addWidget(title)
+        text.addWidget(hint)
+        row.addLayout(text, 1)
+        self.startup_switch = SwitchButton(frame)
+        self.startup_switch.setOnText("Bật")
+        self.startup_switch.setOffText("Tắt")
+        self.startup_switch.setChecked(self.startup.enabled())
+        self.startup_switch.checkedChanged.connect(self.set_startup)
+        row.addWidget(self.startup_switch, 0, Qt.AlignmentFlag.AlignVCenter)
+        return frame
+
+    def set_startup(self, value):
+        try:
+            self.startup.set_enabled(value)
+        except RuntimeError as error:
+            self.feedback.setText(str(error))
+        else:
+            self.feedback.setText(
+                "Nhắc nền sẽ tự chạy khi đăng nhập Windows."
+                if value
+                else "Đã tắt khởi động nhắc nền cùng Windows."
+            )
+        self._sync_startup()
+
+    def _sync_startup(self):
+        self.startup_switch.blockSignals(True)
+        self.startup_switch.setChecked(self.startup.enabled())
+        self.startup_switch.blockSignals(False)
 
     def _excel_section(self):
         panel, box, self.excel_chip = self._panel(
@@ -429,6 +487,8 @@ class SettingsPage(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self.refresh_status()
+        if self.startup is not None:
+            self._sync_startup()  # The shortcut may change outside the app.
 
     def refresh_status(self):
         if self.diagnostics is None:

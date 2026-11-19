@@ -32,31 +32,31 @@ class MessageEdit(PlainTextEdit):
 
 SHEET = """
 QLabel[role="letter"] { background: @surface_container; color: @primary;
-    border-radius: 11px; font-size: 11px; font-weight: 700; }
-QLabel[role="section"] { font-size: 12px; font-weight: 700; }
+    border-radius: 11px; font-size: @fs_tiny; font-weight: 700; }
+QLabel[role="section"] { font-size: @fs_tiny; font-weight: 700; }
 QFrame[role="rule"] { background: @outline_soft; border: none; }
-QLabel[role="field"] { font-size: 12px; font-weight: 500; }
-QLabel[role="hint"] { color: @muted; font-size: 11px; }
+QLabel[role="field"] { font-size: @fs_body; font-weight: 600; }
+QLabel[role="hint"] { color: @muted; font-size: @fs_small; }
 QFrame#notifyBox { background: #e6e9ff; border: 1px solid #d3d8fb; border-radius: 8px; }
 QLabel#notifyIcon { background: @primary_container; border-radius: 18px; }
-QLabel#notifyCaption { font-size: 11px; font-weight: 700; color: @primary; }
+QLabel#notifyCaption { font-size: @fs_tiny; font-weight: 700; color: @primary; }
 QLabel#notifyTime { background: @surface; border-radius: 6px; padding: 3px 10px;
-    font-size: 16px; font-weight: 700; }
-QLabel#notifyChip { border-radius: 4px; padding: 2px 8px; font-size: 11px;
+    font-size: @fs_heading; font-weight: 700; }
+QLabel#notifyChip { border-radius: 4px; padding: 2px 8px; font-size: @fs_tiny;
     font-weight: 600; background: #dbeafe; color: #1d4ed8; }
 QLabel#notifyChip[valid="false"] { background: #fee2e2; color: #b91c1c; }
-QLabel#notifyExplain { color: @muted; font-size: 11px; }
+QLabel#notifyExplain { color: @muted; font-size: @fs_small; }
 QFrame#messageBox { background: @surface_low; border: 1px solid @outline_soft;
     border-radius: 8px; }
 QFrame#messageCard { background: @surface; border: 1px solid @outline_soft;
     border-radius: 6px; }
-QLabel#messageHeading { font-size: 13px; font-weight: 700; }
-QLabel#messageDue { color: @error; font-family: Consolas; font-size: 12px;
+QLabel#messageHeading { font-size: @fs_body; font-weight: 700; }
+QLabel#messageDue { color: @error; font-family: @mono; font-size: @fs_mono;
     font-weight: 700; }
 QLabel[role="channel"] { background: #dbeafe; color: #1d4ed8; border-radius: 8px;
-    padding: 3px 10px; font-size: 11px; font-weight: 600; }
+    padding: 3px 10px; font-size: @fs_tiny; font-weight: 600; }
 QDateTimeEdit { background: @surface_low; border: 1px solid @outline_soft;
-    border-radius: 6px; padding: 6px 10px; font-size: 13px; color: @text; }
+    border-radius: 6px; padding: 6px 10px; font-size: @fs_mono; color: @text; }
 QDateTimeEdit:focus { border-color: @primary; }
 QDateTimeEdit::drop-down { border: none; background: transparent; width: 24px; }
 """

@@ -34,11 +34,11 @@ QFrame#dialogFooter { background: @surface; border: none;
     border-top: 1px solid @outline_soft; border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px; }
 QWidget#dialogBody, QScrollArea { background: transparent; border: none; }
-QLabel { background: transparent; color: @text; font-size: 12px; }
-QLabel#dialogTitle { font-size: 17px; font-weight: 600; }
-QLabel#dialogSubtitle { color: @muted; font-size: 11px; }
+QLabel { background: transparent; color: @text; font-size: @fs_body; }
+QLabel#dialogTitle { font-size: @fs_heading; font-weight: 600; }
+QLabel#dialogSubtitle { color: @muted; font-size: @fs_small; }
 QLabel#dialogIcon { background: @primary_container; border-radius: 6px; }
-QLabel#formError { color: @error; font-size: 12px; }
+QLabel#formError { color: @error; font-size: @fs_small; }
 """
 MARGIN = 16  # Transparent margin around the card for its shadow.
 

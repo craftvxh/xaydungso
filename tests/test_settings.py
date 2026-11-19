@@ -71,7 +71,6 @@ def test_legacy_directory_is_not_automatically_selected_for_overwriting(tmp_path
     assert json.loads(store.path.read_text(encoding="utf-8"))["version"] == 2
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows DPAPI")
 def test_real_dpapi_roundtrip_and_failed_write_preserves_old_settings(
     tmp_path, monkeypatch
 ):
@@ -137,7 +136,6 @@ def test_settings_page_saves_paths_and_keeps_input_on_validation_error():
     """)
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows DPAPI")
 def test_worker_uses_saved_credentials_without_sending(tmp_path, monkeypatch):
     from xaydungso import worker
 

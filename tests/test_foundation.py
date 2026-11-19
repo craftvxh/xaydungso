@@ -19,8 +19,6 @@ def run_python(source: str) -> subprocess.CompletedProcess[str]:
             env={
                 **os.environ,
                 "QT_QPA_PLATFORM": "offscreen",
-                "QT_QPA_PLATFORMTHEME": "",
-                "XDG_DATA_HOME": data_directory,
                 "LOCALAPPDATA": data_directory,
                 "APPDATA": data_directory,
                 "XAYDUNGSO_DATA_DIR": data_directory,

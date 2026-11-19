@@ -97,7 +97,6 @@ def test_gui_worker_launcher_actually_starts_and_stops_empty_worker(tmp_path):
         assert not is_running(tmp_path)
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows console behaviour")
 def test_worker_starts_without_a_console_window(tmp_path, monkeypatch):
     from xaydungso.infrastructure import worker_process
 

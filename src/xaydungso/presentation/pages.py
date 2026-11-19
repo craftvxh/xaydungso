@@ -44,7 +44,13 @@ from xaydungso.presentation.record_widgets import (
     status_badge,
 )
 from xaydungso.presentation.reminders_page import RemindersPage  # noqa: F401
-from xaydungso.presentation.theme import COLORS, accent_button, qss, styled
+from xaydungso.presentation.theme import (
+    COLORS,
+    accent_button,
+    mono_font,
+    qss,
+    styled,
+)
 
 
 class Page(QWidget):
@@ -105,6 +111,13 @@ class RecordsPage(Page):
         ("status", "TRẠNG THÁI", 150),
     )
     COLUMN = {key: index for index, (key, _, _) in enumerate(COLUMNS)}
+    # Date-time columns use the monospace family, like record codes.
+    DATE_KEYS = (
+        "received_at",
+        "deadline",
+        "return_appointment_date",
+        "handover_at",
+    )
     PAGE_SIZE = 14
 
     def __init__(self, service, runner, output_path, parent=None):
@@ -120,22 +133,22 @@ class RecordsPage(Page):
             self,
             """
             QWidget#records { background: @page; }
-            QLabel { background: transparent; color: @text; }
-            QLabel#pageTitle { font-size: 16px; font-weight: 700; }
+            QLabel { background: transparent; color: @text; font-size: @fs_body; }
+            QLabel#pageTitle { font-size: @fs_page; font-weight: 700; }
             QLabel#pageIcon { background: @primary_container; border-radius: 4px; }
             QFrame#recordsToolbar, QFrame#tableCard { background: @surface;
                 border: 1px solid @outline_soft; border-radius: 8px; }
             QFrame#recordsCount { background: @surface_container;
                 border: 1px solid @outline_soft; border-radius: 8px; }
-            QLabel#countNumber { font-size: 12px; font-weight: 700; }
-            QLabel#countUnit, QLabel#tableFooterText { color: @muted; font-size: 12px; }
+            QLabel#countNumber { font-size: @fs_small; font-weight: 700; }
+            QLabel#countUnit, QLabel#tableFooterText { color: @muted; font-size: @fs_small; }
             QFrame#tableFooter { background: @surface_low; border: none;
                 border-top: 1px solid @outline_soft; border-bottom-left-radius: 8px;
                 border-bottom-right-radius: 8px; }
             QFrame#bulkBar { background: @surface_container; border: none;
                 border-bottom: 1px solid @outline_soft; border-top-left-radius: 8px;
                 border-top-right-radius: 8px; }
-            QLabel#bulkText { font-size: 12px; font-weight: 600; }
+            QLabel#bulkText { font-size: @fs_body; font-weight: 600; }
             """,
         )
         self.layout.setContentsMargins(16, 12, 16, 12)
@@ -257,7 +270,7 @@ class RecordsPage(Page):
             # Soft column borders in the body and matching header dividers.
             "QTableView { gridline-color: @outline_soft; }"
             " QHeaderView::section { background-color: @surface_low; color: @muted;"
-            ' font: 600 11px "Segoe UI"; border: none;'
+            " font-family: @font; font-size: @fs_tiny; font-weight: 600; border: none;"
             " border-right: 1px solid @outline_soft;"
             # Fluent's 16px item padding + Qt's ~3px text margin = TEXT_INSET.
             " border-bottom: 1px solid @outline_soft; padding-left: 19px;"
@@ -506,14 +519,9 @@ class RecordsPage(Page):
         table.blockSignals(True)
         table.clearSelection()
         table.setRowCount(len(records))
-        bold = QFont()
-        bold.setFamilies(["Segoe UI", "Microsoft YaHei"])
-        bold.setPixelSize(12)
-        bold.setWeight(QFont.Weight.DemiBold)
-        mono = QFont()
-        mono.setFamilies(["Consolas", "Courier New"])
-        mono.setPixelSize(12)
-        mono.setWeight(QFont.Weight.Bold)
+        mono = mono_font(weight=QFont.Weight.Bold)
+        dates = mono_font()
+        overdue_font = mono_font(weight=QFont.Weight.Bold)
         for index, record in enumerate(records):
             data = record.data
             deadline, hint, overdue = deadline_info(data)
@@ -534,8 +542,10 @@ class RecordsPage(Page):
                     item.setFont(mono)
                     item.setForeground(QColor(COLORS["primary"]))
                 elif key == "deadline" and overdue:
-                    item.setFont(bold)
+                    item.setFont(overdue_font)
                     item.setForeground(QColor(COLORS["error"]))
+                elif key in self.DATE_KEYS:
+                    item.setFont(dates)
                 table.setItem(index, self.COLUMN[key], item)
             # The badge widget shows the status; an empty item avoids text drawn
             # underneath it by the table delegate.

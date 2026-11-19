@@ -142,7 +142,6 @@ def test_windows_payload_is_encoded_data_not_executable_text():
 
 
 def test_windows_process_errors_are_reported(monkeypatch):
-    monkeypatch.setattr(notifications.sys, "platform", "win32")
     monkeypatch.setenv("SystemRoot", "C:/Windows")
     monkeypatch.setattr(notifications.subprocess, "CREATE_NO_WINDOW", 0, raising=False)
     captured = []

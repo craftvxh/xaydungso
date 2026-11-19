@@ -27,6 +27,9 @@ mục, nội dung bên phải. Thông báo kết quả hiện ở cuối trang v
   Chat ID của chính bot bị từ chối; lỗi không lộ token. Test tự động dùng mock, không gửi thật.
 - **Lưu** để lịch nhắc dùng cấu hình mới. Worker đọc lại cấu hình Telegram trước mỗi lần gửi,
   không cần khởi động lại; nếu đọc lỗi thì không gửi tới đích cũ.
+- Công tắc **Khởi động nhắc nền cùng Windows** (bật mặc định từ lần mở app đầu tiên) tạo/xóa lối
+  tắt Startup ngay khi gạt, không qua **Lưu**; trạng thái đọc lại khi mở trang. Chi tiết:
+  [reminders.md](reminders.md#worker-nhắc-nền).
 
 ## Sổ theo dõi Excel
 
@@ -37,7 +40,7 @@ mục, nội dung bên phải. Thông báo kết quả hiện ở cuối trang v
   gian sửa file), số hồ sơ ứng dụng đã ghi vào file đó.
 - **Mở file Excel**, **Ghi lại ngay** (ghi lại toàn bộ hồ sơ, dùng khi lần ghi trước lỗi), **Lưu**.
 - Luôn giữ dòng cũ, thêm/sửa theo mã. `excel_policy` chỉ để tương thích file cấu hình cũ và
-  được chuẩn hóa về merge. Chi tiết: [Excel](../excel/overview.md).
+  được chuẩn hóa về merge. Chi tiết: [Excel](excel.md#excel--ghi-một-chiều-vào-sổ-làm-việc-có-sẵn).
 
 ## Lưu cấu hình
 
@@ -47,5 +50,5 @@ cùng lưu toàn bộ cấu hình.
 
 ## Chưa có
 
-Sao lưu hồ sơ, nhập Excel (ngoài phạm vi theo AGENTS.md), nhật ký xử lý, tự phát hiện Chat ID.
+Sao lưu hồ sơ, nhập Excel (ngoài phạm vi theo CLAUDE.md), nhật ký xử lý, tự phát hiện Chat ID.
 Số liệu trạng thái đọc qua `infrastructure/diagnostics.py` (chỉ đọc).
