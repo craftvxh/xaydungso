@@ -44,6 +44,15 @@ def is_running(directory: Path) -> bool:
         return not acquired
 
 
+def _windowless_python() -> str:
+    """pythonw.exe next to the running interpreter on Windows, if present."""
+    if sys.platform == "win32":
+        candidate = Path(sys.executable).with_name("pythonw.exe")
+        if candidate.is_file():
+            return str(candidate)
+    return sys.executable
+
+
 def start_worker(directory: Path) -> None:
     if is_running(directory):
         return
@@ -51,12 +60,15 @@ def start_worker(directory: Path) -> None:
     if getattr(sys, "frozen", False):
         command = [sys.executable, "--reminder-worker"]
     else:
-        command = [sys.executable, "-m", "xaydungso.worker"]
+        command = [_windowless_python(), "-m", "xaydungso.worker"]
     options = (
         {"start_new_session": True}
         if sys.platform != "win32"
         else {
-            "creationflags": subprocess.DETACHED_PROCESS
+            # CREATE_NO_WINDOW, not DETACHED_PROCESS: a detached console program
+            # (e.g. the venv python.exe launcher's child) opens a new visible
+            # terminal; with no window it gets a hidden console instead.
+            "creationflags": subprocess.CREATE_NO_WINDOW
             | subprocess.CREATE_NEW_PROCESS_GROUP
         }
     )

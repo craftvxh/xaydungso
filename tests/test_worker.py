@@ -3,6 +3,9 @@
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+import pytest
 
 from xaydungso.infrastructure.worker_process import (
     is_running,
@@ -92,3 +95,27 @@ def test_gui_worker_launcher_actually_starts_and_stops_empty_worker(tmp_path):
         while is_running(tmp_path) and time.monotonic() < deadline:
             time.sleep(0.05)
         assert not is_running(tmp_path)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows console behaviour")
+def test_worker_starts_without_a_console_window(tmp_path, monkeypatch):
+    from xaydungso.infrastructure import worker_process
+
+    calls = []
+
+    class FakeProcess:
+        def poll(self):
+            return 0  # Exit at once; we only inspect how it was launched.
+
+    def fake_popen(command, **options):
+        calls.append((command, options))
+        return FakeProcess()
+
+    monkeypatch.setattr(worker_process.subprocess, "Popen", fake_popen)
+    with pytest.raises(RuntimeError):
+        worker_process.start_worker(tmp_path)
+    command, options = calls[0]
+    assert Path(command[0]).name.lower() == "pythonw.exe"
+    flags = options["creationflags"]
+    assert flags & subprocess.CREATE_NO_WINDOW
+    assert not flags & subprocess.DETACHED_PROCESS  # Would open a new terminal.

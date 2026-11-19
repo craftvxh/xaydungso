@@ -139,3 +139,12 @@ def test_reminders_page_checkboxes_and_bulk_delete():
         page.timer.stop()
         page.close()
     """)
+
+
+def test_table_shows_only_first_non_empty_line_of_a_message():
+    from xaydungso.presentation.reminders_page import first_line
+
+    message = chr(10).join(["", "  🔔 THÔNG BÁO  ", "📁 Mã hồ sơ: HS-1", ""])
+    assert first_line(message) == "🔔 THÔNG BÁO"
+    assert first_line("Một dòng") == "Một dòng"
+    assert first_line("") == ""
