@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QSizePolicy,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
@@ -89,6 +90,29 @@ QFrame#remBulk { background: @surface_container; border: none;
     border-top-right-radius: 8px; }
 QLabel#remBulkText { font-size: 12px; font-weight: 600; }
 """
+
+
+def first_line(text):
+    """First non-empty line: multi-line template messages stay one table line."""
+    return next((line.strip() for line in text.splitlines() if line.strip()), "")
+
+
+class ElidedLabel(QLabel):
+    """Single-line label that shortens with "…" to whatever width it gets."""
+
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.full_text = text
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setText(text)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        elided = self.fontMetrics().elidedText(
+            self.full_text, Qt.TextElideMode.ElideRight, max(0, self.width())
+        )
+        if elided != self.text():
+            self.setText(elided)
 
 
 def reminder_status(reminder):
@@ -484,8 +508,8 @@ class RemindersPage(QWidget):
             self._stack(self._lines(*who)),
             self._stack([self._rich(line) for line in channels], errors),
             self._stack(
-                self._lines(reminder["title"], detail),
-                reminder["title"] + "\n" + detail,
+                self._lines(first_line(reminder["title"]), detail),
+                reminder["title"] + "\n\n" + detail,  # Full message on hover.
             ),
             self._stack(self._lines(f"{notify:%d/%m/%Y}", f"{notify:%H:%M}")),
             self._stack([self._badge(status)]),
@@ -504,9 +528,10 @@ class RemindersPage(QWidget):
 
     @staticmethod
     def _lines(main, sub):
-        top = QLabel(main)
+        # Exactly two single-line labels per cell keeps every row the same height.
+        top = ElidedLabel(main)
         top.setProperty("role", "main")
-        bottom = QLabel(sub)
+        bottom = ElidedLabel(sub)
         bottom.setProperty("role", "sub")
         return [top, bottom]
 
@@ -535,7 +560,10 @@ class RemindersPage(QWidget):
         box.addStretch()
         for widget in widgets:
             widget.setParent(cell)
-            box.addWidget(widget, 0, Qt.AlignmentFlag.AlignLeft)
+            if isinstance(widget, ElidedLabel):
+                box.addWidget(widget)  # Full cell width so it can elide.
+            else:
+                box.addWidget(widget, 0, Qt.AlignmentFlag.AlignLeft)
         box.addStretch()
         cell.setToolTip(tooltip)
         return cell
@@ -559,7 +587,7 @@ class RemindersPage(QWidget):
             button.setToolTip(tip if enabled else f"{tip} (không khả dụng)")
             button.setEnabled(enabled)
             button.clicked.connect(lambda _, r=reminder, a=action: a(reminder=r))
-            box.addWidget(button)
+            box.addWidget(button, 0, Qt.AlignmentFlag.AlignVCenter)
         box.addStretch()
         return cell
 
