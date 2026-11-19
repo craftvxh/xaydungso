@@ -11,7 +11,10 @@
  * hoa/thường). Bộ cài được tạo bởi packaging/xaydungso.iss (Inno Setup) tại
  * dist/xaydungso_setup.exe; mỗi bản phát hành đính kèm tệp này với đúng tên đó.
  *
- * Nếu JavaScript bị tắt, các nút dùng href mặc định trong index.html (trang Releases).
+ * Nút tải trong index.html cũng có sẵn href tới đúng link này (chạy được cả khi không có JS
+ * hoặc trình duyệt còn giữ bản cũ của tệp này). Đổi tên tệp thì sửa cả ở đó.
+ * Mỗi lần sửa tệp này hoặc main.js: tăng số ?v=… ở hai thẻ <script> cuối index.html để
+ * trình duyệt tải bản mới thay vì bản đã lưu.
  */
 window.XDS_CONFIG = {
   REPO: 'craftvxh/xaydungso',
