@@ -1,6 +1,9 @@
 """Fluent navigation into the record and reminder use cases."""
 
-from PyQt6.QtGui import QColor, QIcon
+import logging
+
+from PyQt6.QtGui import QColor, QCursor, QIcon
+from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
 from qfluentwidgets import FluentWindow, NavigationItemPosition
 
 from xaydungso.core.config import AppSettings
@@ -11,6 +14,9 @@ from xaydungso.presentation.settings import SettingsPage
 from xaydungso.presentation.shell import nav_badge, set_badge, style_shell
 from xaydungso.presentation.tasks import TaskRunner
 from xaydungso.presentation.templates_page import TemplatesPage
+from xaydungso.presentation.tray import AppTray
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(FluentWindow):
@@ -29,6 +35,7 @@ class MainWindow(FluentWindow):
         templates=None,
         diagnostics=None,
         startup=None,
+        tray=None,
     ):
         super().__init__()
         self.setMicaEffectEnabled(False)
@@ -37,6 +44,7 @@ class MainWindow(FluentWindow):
         self.setWindowIcon(QIcon(str(LOGO)))
         style_shell(self, settings.window_title)
         self.resize(settings.window_width, settings.window_height)
+        self.center_on_screen()
         # Keep the navigation panel expanded by default; the menu button still collapses it.
         self.navigationInterface.setExpandWidth(220)
         self.navigationInterface.setMinimumExpandWidth(0)
@@ -93,6 +101,46 @@ class MainWindow(FluentWindow):
         self.reminders_page.changed.connect(self.dashboard_page.refresh)
         self.stackedWidget.currentChanged.connect(self._page_changed)
         self.records_page.remind.connect(self._remind)
+        # Tray icon (None = when Windows offers one): X hides, Thoát quits.
+        self.quitting = False
+        self.tray = None
+        if QSystemTrayIcon.isSystemTrayAvailable() if tray is None else tray:
+            self.tray = AppTray(self, self.quit_app)
+            self.tray.show()
+            QApplication.instance().setQuitOnLastWindowClosed(False)
+
+    def center_on_screen(self):
+        """Open centred on the screen under the mouse (work area, no taskbar)."""
+        screen = QApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
+        if screen is None:
+            return
+        area = screen.availableGeometry()
+        frame = self.frameGeometry()
+        frame.moveCenter(area.center())
+        # Never push the title bar above the work area on small screens.
+        self.move(max(frame.left(), area.left()), max(frame.top(), area.top()))
+
+    def bring_to_front(self):
+        """Show the window again (tray double-click, or a second launch)."""
+        logger.info("Window shown again")
+        if self.isMinimized():
+            self.showNormal()
+        else:
+            self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def quit_app(self):
+        """Really close (tray Thoát); stays open if data work is still running."""
+        logger.info("Quit requested")
+        self.quitting = True
+        if self.close():
+            if self.tray is not None:
+                self.tray.hide()
+            QApplication.instance().quit()
+        else:
+            self.quitting = False
+            self.bring_to_front()  # Shows why it cannot close yet.
 
     def _badges(self, snapshot):
         # Same figures as the Dashboard cards: open records, reminders due today.
@@ -120,6 +168,11 @@ class MainWindow(FluentWindow):
             self.dashboard_page.refresh()
 
     def closeEvent(self, event):
+        if self.tray is not None and not self.quitting:
+            event.ignore()
+            self.hide()
+            logger.info("Window hidden to the tray")
+            return
         if self.runner.busy:
             self.stackedWidget.currentWidget().feedback.setText(
                 "Đang xử lý dữ liệu. Vui lòng đợi hoàn tất rồi đóng cửa sổ."

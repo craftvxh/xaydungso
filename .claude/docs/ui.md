@@ -47,10 +47,18 @@ người dùng nghiệm thu trên Windows.
 
 ## Khung cửa sổ (`presentation/shell.py`)
 
-- `FluentWindow` 1280 × 800 lúc mở. Thanh tiêu đề "Xây Dựng Số - Giải pháp chuyển đổi số",
+- `FluentWindow` 1280 × 800 lúc mở, **giữa màn hình** (vùng làm việc của màn hình đang có chuột; màn hình nhỏ thì giữ thanh tiêu đề trong màn hình). Thanh tiêu đề "Xây Dựng Số - Giải pháp chuyển đổi số",
   thanh tiêu đề và thanh điều hướng nền `#f2f3ff`; không có dòng logo trong thanh điều hướng.
 - Mục: **Tổng quan**, **Quản lý hồ sơ**, **Nhắc nhở**, và **Cài đặt** ở đáy. Badge: số hồ sơ chưa
   hoàn thành (Quản lý hồ sơ), số lịch nhắc hôm nay (Nhắc nhở, màu đỏ); ẩn khi bằng 0.
+- **Khay hệ thống** (`presentation/tray.py`, người dùng duyệt 19/11/2026): icon logo khi app đang
+  mở. Nút X ẩn cửa sổ xuống khay, không hiện thông báo (người dùng chọn); **nhấp đúp** icon
+  hoặc menu chuột phải **Mở** để mở lại; **Thoát** đóng hẳn (menu chỉ có chữ, không icon) (vẫn chặn khi đang xử lý
+  dữ liệu). Nhấp một lần không làm gì. Không có khay thì X đóng như cũ. Nhắc nền là tiến trình
+  riêng, không bị ảnh hưởng.
+- **Một cửa sổ mỗi người dùng** (`presentation/single_instance.py`, `QLocalServer`): mở app lần nữa
+  chỉ hiện lại cửa sổ đang chạy (kể cả đang ẩn ở khay) rồi thoát. Launcher VBS ghi
+  `launcher-2.log` khi `launcher.log` đang bị bản đang chạy giữ.
 
 ## Tổng quan
 
